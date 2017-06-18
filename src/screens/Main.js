@@ -13,6 +13,10 @@ export default class Main extends Component {
                     title="OperatorChat"
                     onPress={() => this.props.navigation.navigate('OperatorChat')}
                 />
+                <Button
+                    title="FlipboardCover"
+                    onPress={() => this.props.navigation.navigate('FlipboardCover')}
+                />
             </View>
         )
     }
