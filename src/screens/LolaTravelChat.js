@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { StyleSheet, View, Text, Button, Image, ScrollView } from 'react-native'
+import { StyleSheet, View, ScrollView } from 'react-native'
 
 import randomuser from '../randomuser'
 import randomimage from '../randomimage'
