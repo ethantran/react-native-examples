@@ -51,7 +51,7 @@ function renderSliderItem(item, i) {
     return <SliderItem key={i} {...item} />
 }
 
-export default class LolaTravelConv1 extends Component {
+export default class LolaTravelChat extends Component {
     render() {
         return (
             <ScrollView style={{ backgroundColor: 'white' }}>

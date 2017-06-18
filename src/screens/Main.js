@@ -6,8 +6,8 @@ export default class Main extends Component {
         return (
             <View style={{ marginTop: 20 }}>
                 <Button
-                    title="LolaTravelConv1"
-                    onPress={() => this.props.navigation.navigate('LolaTravelConv1')}
+                    title="LolaTravelChat"
+                    onPress={() => this.props.navigation.navigate('LolaTravelChat')}
                 />
                 <Button
                     title="OperatorChat"

@@ -4,13 +4,13 @@ import { Platform } from 'react-native';
 import { StackNavigator } from 'react-navigation';
 
 import Main from './src/screens/Main';
-import LolaTravelConv1 from './src/screens/LolaTravelConv1';
+import LolaTravelChat from './src/screens/LolaTravelChat';
 import OperatorChat from './src/screens/OperatorChat';
 
 const App = StackNavigator(
   {
     Main: { screen: Main },
-    LolaTravelConv1: { screen: LolaTravelConv1 },
+    LolaTravelChat: { screen: LolaTravelChat },
     OperatorChat: { screen: OperatorChat },
   },
   {
