@@ -9,6 +9,10 @@ export default class Main extends Component {
                     title="LolaTravelConv1"
                     onPress={() => this.props.navigation.navigate('LolaTravelConv1')}
                 />
+                <Button
+                    title="OperatorChat"
+                    onPress={() => this.props.navigation.navigate('OperatorChat')}
+                />
             </View>
         )
     }
