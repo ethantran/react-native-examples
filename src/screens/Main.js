@@ -17,6 +17,10 @@ export default class Main extends Component {
                     title="FlipboardCover"
                     onPress={() => this.props.navigation.navigate('FlipboardCover')}
                 />
+                <Button
+                    title="SnapchatSearch"
+                    onPress={() => this.props.navigation.navigate('SnapchatSearch')}
+                />
             </View>
         )
     }
