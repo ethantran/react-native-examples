@@ -84,16 +84,11 @@ export default class AnchorWalkthrough extends Component {
         this.radial.onPanResponderRelease(...args)
     }
     panResponder = PanResponder.create({
-        // onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponderCapture: () => true,
         onPanResponderMove: this.onPanResponderMove,
-        onPanResponderRelease: this.onPanResponderRelease,
-        onPanResponderTerminate: (evt, gestureState) => {
-            console.log('terminated walk pan')
-        }
+        onPanResponderRelease: this.onPanResponderRelease
     })
     render() {
-        console.log(this.state.selected, 'selected')
         return (
             <View style={styles.container}>
                 <AnimatedLinearGradient colors={[
