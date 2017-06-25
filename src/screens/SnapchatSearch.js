@@ -10,21 +10,17 @@ import randomnumber from '../randomnumber'
 import QuickChatItem from '../components/SnapchatQuickChatItem'
 import SearchItem from '../components/SnapchatSearchItem'
 
-const quickChatFriends = [
-    { name: loremipsum({count: 1, units: 'words'}), source: { uri: randomuser() }},
-    { name: loremipsum({count: 1, units: 'words'}), source: { uri: randomuser() }},
-    { name: loremipsum({count: 1, units: 'words'}), source: { uri: randomuser() }},
-    { name: loremipsum({count: 1, units: 'words'}), source: { uri: randomuser() }},
-    { name: loremipsum({count: 1, units: 'words'}), source: { uri: randomuser() }},
-]
+const quickChatFriends = Array(5).fill().map(() => ({
+    name: loremipsum({count: 1, units: 'words'}), 
+    source: { uri: randomuser() }
+}))
 
-const friends = [
-    { name: loremipsum({count: 1, units: 'words'}), username: loremipsum({count: 1, units: 'words'}), count: Math.floor(randomnumber(1, 1000)), source: { uri: randomuser() }},
-    { name: loremipsum({count: 1, units: 'words'}), username: loremipsum({count: 1, units: 'words'}), count: Math.floor(randomnumber(1, 1000)), source: { uri: randomuser() }},
-    { name: loremipsum({count: 1, units: 'words'}), username: loremipsum({count: 1, units: 'words'}), count: Math.floor(randomnumber(1, 1000)), source: { uri: randomuser() }},
-    { name: loremipsum({count: 1, units: 'words'}), username: loremipsum({count: 1, units: 'words'}), count: Math.floor(randomnumber(1, 1000)), source: { uri: randomuser() }},
-    { name: loremipsum({count: 1, units: 'words'}), username: loremipsum({count: 1, units: 'words'}), count: Math.floor(randomnumber(1, 1000)), source: { uri: randomuser() }},
-]
+const friends = Array(5).fill().map(() => ({ 
+    name: loremipsum({count: 1, units: 'words'}), 
+    username: loremipsum({count: 1, units: 'words'}), 
+    count: Math.floor(randomnumber(1, 1000)), 
+    source: { uri: randomuser() }
+}))
 
 const styles = StyleSheet.create({
     container: {
