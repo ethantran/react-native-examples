@@ -1,15 +1,15 @@
-import React, { Component } from 'react'
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, PanResponder, Dimensions, Animated } from 'react-native'
-import loremipsum from 'lorem-ipsum-react-native'
+import React, { Component } from 'react';
+import { StyleSheet, View, Text, Image, PanResponder, Dimensions, Animated } from 'react-native';
+import loremipsum from 'lorem-ipsum-react-native';
 
-import randomuser from '../randomuser'
-import randomcolor from '../randomcolor'
-import AnchorRadial from '../components/AnchorRadial'
-import AnchorRadialChild from '../components/AnchorRadialChild'
-import AnimatedLinearGradient from '../components/AnimatedLinearGradient'
-import PanResponderTouchable from '../components/PanResponderTouchable'
+import randomuser from '../randomuser';
+import randomcolor from '../randomcolor';
+import AnchorRadial from '../components/AnchorRadial';
+import AnchorRadialChild from '../components/AnchorRadialChild';
+import AnimatedLinearGradient from '../components/AnimatedLinearGradient';
+import PanResponderTouchable from '../components/PanResponderTouchable';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
     container: {
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80
     }
-})
+});
 
 const users = Array(8).fill().map(() =>
     ({
@@ -66,7 +66,7 @@ const users = Array(8).fill().map(() =>
         primaryColor: randomcolor(),
         secondaryColor: randomcolor()
     })
-)
+);
 
 export default class AnchorWalkthrough extends Component {
     state = {
@@ -80,8 +80,8 @@ export default class AnchorWalkthrough extends Component {
         [null, { dx: this.xOffset }]
     )
     onPanResponderRelease = (...args) => {
-        this.setState({ disableUsers: false })
-        this.radial.onPanResponderRelease(...args)
+        this.setState({ disableUsers: false });
+        this.radial.onPanResponderRelease(...args);
     }
     panResponder = PanResponder.create({
         onMoveShouldSetPanResponderCapture: () => true,
@@ -107,16 +107,16 @@ export default class AnchorWalkthrough extends Component {
                 </Animated.View>
                 <View style={styles.circle} />
                 <AnchorRadial
-                    ref={c => this.radial = c}
+                    ref={c => (this.radial = c)}
                     style={styles.radial}
                     xOffset={this.xOffset}
                     onValueChanged={(i) => {
-                        const { primaryColor, secondaryColor } = users[i]
+                        const { primaryColor, secondaryColor } = users[i];
                         this.setState({
                             primaryColor,
                             secondaryColor,
                             selected: i
-                        })
+                        });
                     }}
                     value={this.state.selected}>
                     {users.map(({ source }, i) => (
@@ -124,8 +124,10 @@ export default class AnchorWalkthrough extends Component {
                             <PanResponderTouchable
                                 onPressOut={() => {
                                     if (this.state.selected === i)
-                                        this.setState({playing: i})
-                                    this.setState({selected: i})
+                                        {
+                                            this.setState({playing: i});
+                                        }
+                                    this.setState({selected: i});
                                 }}>
                                 <Image style={styles.image} source={source} />
                             </PanResponderTouchable>
@@ -133,6 +135,6 @@ export default class AnchorWalkthrough extends Component {
                     ))}
                 </AnchorRadial>
             </View>
-        )
+        );
     }
 }
