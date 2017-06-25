@@ -2,7 +2,7 @@
   "name": "react-native-examples",
   "version": "0.0.0",
   "description": "Hello Expo!",
-  "author": null,
+  "author": "Ethan Tran (ethan@joinronin.com)",
   "private": true,
   "main": "main.js",
   "dependencies": {
@@ -11,5 +11,13 @@
     "react": "16.0.0-alpha.6",
     "react-native": "https://github.com/expo/react-native/archive/sdk-17.0.0.tar.gz",
     "react-navigation": "1.0.0-beta.11"
+  },
+  "devDependencies": {
+    "babel-eslint": "7.2.3",
+    "eslint-config-fb-strict": "20.0.3",
+    "eslint-config-fbjs": "1.1.1",
+    "eslint-plugin-babel": "4.1.1",
+    "eslint-plugin-flowtype": "2.34.0",
+    "eslint-plugin-react": "7.1.0"
   }
 }
