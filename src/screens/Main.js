@@ -21,6 +21,10 @@ export default class Main extends Component {
                     title="SnapchatSearch"
                     onPress={() => this.props.navigation.navigate('SnapchatSearch')}
                 />
+                <Button
+                    title="AnchorWalkthrough"
+                    onPress={() => this.props.navigation.navigate('AnchorWalkthrough')}
+                />
             </View>
         )
     }

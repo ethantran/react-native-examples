@@ -8,6 +8,7 @@ import LolaTravelChat from './src/screens/LolaTravelChat';
 import OperatorChat from './src/screens/OperatorChat';
 import FlipboardCover from './src/screens/FlipboardCover';
 import SnapchatSearch from './src/screens/SnapchatSearch';
+import AnchorWalkthrough from './src/screens/AnchorWalkthrough';
 
 const App = StackNavigator(
   {
@@ -15,10 +16,11 @@ const App = StackNavigator(
     LolaTravelChat: { screen: LolaTravelChat },
     OperatorChat: { screen: OperatorChat },
     FlipboardCover: { screen: FlipboardCover },
-    SnapchatSearch: { screen: SnapchatSearch }
+    SnapchatSearch: { screen: SnapchatSearch },
+    AnchorWalkthrough: { screen: AnchorWalkthrough }
   },
   {
-    initialRouteName: 'SnapchatSearch',
+    initialRouteName: 'Main',
     headerMode: 'none',
     mode: Platform.OS === 'ios' ? 'modal' : 'card',
   }
