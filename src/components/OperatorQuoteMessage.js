@@ -1,7 +1,7 @@
-import React from 'react'
-import { StyleSheet, View, Text } from 'react-native'
+import React from 'react';
+import { StyleSheet, View, Text } from 'react-native';
 
-import Message from './OperatorMessage'
+import Message from './OperatorMessage';
 
 const styles = StyleSheet.create({
     container: {
@@ -17,7 +17,7 @@ const styles = StyleSheet.create({
     time: {
         fontWeight: '100',
     }
-})
+});
 
 const QuoteMessage = ({ text, time, ...props }) => (
     <Message fullWidth {...props}>
@@ -26,5 +26,5 @@ const QuoteMessage = ({ text, time, ...props }) => (
             <Text style={styles.time}>{time}</Text>
         </View>
     </Message>
-)
-export default QuoteMessage
+);
+export default QuoteMessage;

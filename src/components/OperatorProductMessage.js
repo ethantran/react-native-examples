@@ -1,12 +1,10 @@
-import React from 'react'
-import { StyleSheet, View, Text, Image } from 'react-native'
+import React from 'react';
+import { StyleSheet, View, Text, Image } from 'react-native';
 
-import Message from './OperatorMessage'
-import MessageText from './OperatorMessageText'
-import MessageButton from './OperatorMessageButton'
+import Message from './OperatorMessage';
+import MessageButton from './OperatorMessageButton';
 
-const colorLight = '#E8E8E8'
-const colorPrimary = '#4EAAF0'
+const colorLight = '#E8E8E8';
 
 const styles = StyleSheet.create({
     profileContainer: {
@@ -48,7 +46,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: '#666666'
     }
-})
+});
 
 const ProductMessage = ({ avatar, text, source, creator, name, price, buttonTitle, onPress, ...props }) => (
     <Message fullWidth {...props}>
@@ -66,5 +64,5 @@ const ProductMessage = ({ avatar, text, source, creator, name, price, buttonTitl
         </View>
         <MessageButton title={buttonTitle} onPress={onPress} primary />
     </Message>
-)
-export default ProductMessage
+);
+export default ProductMessage;

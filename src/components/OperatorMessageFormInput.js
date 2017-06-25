@@ -1,8 +1,7 @@
-import React from 'react'
-import { StyleSheet, View, Text, TextInput } from 'react-native'
+import React from 'react';
+import { StyleSheet, View, Text, TextInput } from 'react-native';
 
-const colorLight = '#E8E8E8'
-const colorPrimary = '#4EAAF0'
+const colorLight = '#E8E8E8';
 
 const styles = StyleSheet.create({
     inputContainer: {
@@ -28,12 +27,12 @@ const styles = StyleSheet.create({
         marginLeft: -5,
         marginBottom: 15
     }
-})
+});
 
 const MessageFormInput = ({ labelText, optional, placeholder }) => (
     <View style={styles.inputContainer}>
         <Text style={styles.label}>{labelText.toUpperCase()}{optional && <Text style={styles.optional}> (optional)</Text>}</Text>
         <TextInput style={styles.input} placeholder={placeholder} placeholderTextColor={colorLight} />
     </View>
-)
-export default MessageFormInput
+);
+export default MessageFormInput;

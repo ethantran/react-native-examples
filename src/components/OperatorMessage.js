@@ -1,10 +1,10 @@
-import React from 'react'
-import { StyleSheet, View, Image } from 'react-native'
+import React from 'react';
+import { StyleSheet, View, Image } from 'react-native';
 
-import MessageMeta from './OperatorMessageMeta'
+import MessageMeta from './OperatorMessageMeta';
 
-const colorLight = '#E8E8E8'
-const colorPrimary = '#4EAAF0'
+const colorLight = '#E8E8E8';
+const colorPrimary = '#4EAAF0';
 
 const styles = StyleSheet.create({
     container: {
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: 7,
         overflow: 'hidden'
     }
-})
+});
 
 const Message = ({ me, fullWidth, user, children }) => (
     <MessageMeta me={me}>
@@ -58,5 +58,5 @@ const Message = ({ me, fullWidth, user, children }) => (
             {children}
         </View>
     </MessageMeta>
-)
-export default Message
+);
+export default Message;

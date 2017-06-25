@@ -1,26 +1,25 @@
-import React, { Component } from 'react'
-import { StyleSheet, ScrollView, View, Image, Text, TextInput } from 'react-native'
-import loremipsum from 'lorem-ipsum-react-native'
-import { EvilIcons } from '@expo/vector-icons'
+import React, { Component } from 'react';
+import { StyleSheet, ScrollView, View, Text, TextInput } from 'react-native';
+import loremipsum from 'lorem-ipsum-react-native';
+import { EvilIcons } from '@expo/vector-icons';
 
-import randomuser from '../randomuser'
-import randomimage from '../randomimage'
-import randomnumber from '../randomnumber'
+import randomuser from '../randomuser';
+import randomnumber from '../randomnumber';
 
-import QuickChatItem from '../components/SnapchatQuickChatItem'
-import SearchItem from '../components/SnapchatSearchItem'
+import QuickChatItem from '../components/SnapchatQuickChatItem';
+import SearchItem from '../components/SnapchatSearchItem';
 
 const quickChatFriends = Array(5).fill().map(() => ({
-    name: loremipsum({count: 1, units: 'words'}), 
+    name: loremipsum({count: 1, units: 'words'}),
     source: { uri: randomuser() }
-}))
+}));
 
-const friends = Array(5).fill().map(() => ({ 
-    name: loremipsum({count: 1, units: 'words'}), 
-    username: loremipsum({count: 1, units: 'words'}), 
-    count: Math.floor(randomnumber(1, 1000)), 
+const friends = Array(5).fill().map(() => ({
+    name: loremipsum({count: 1, units: 'words'}),
+    username: loremipsum({count: 1, units: 'words'}),
+    count: Math.floor(randomnumber(1, 1000)),
     source: { uri: randomuser() }
-}))
+}));
 
 const styles = StyleSheet.create({
     container: {
@@ -88,11 +87,11 @@ const styles = StyleSheet.create({
     tabbarItemTextSelected: {
         color: 'white',
     }
-})
+});
 
-const SearchIcon = () => <EvilIcons style={styles.searchbarIcon} name="search" size={30} color="white" />
+const SearchIcon = () => <EvilIcons style={styles.searchbarIcon} name="search" size={30} color="white" />;
 
-const CloseIcon = () => <EvilIcons style={styles.searchbarIcon} name="close" size={30} color="white" />
+const CloseIcon = () => <EvilIcons style={styles.searchbarIcon} name="close" size={30} color="white" />;
 
 export default class FlipboardCover extends Component {
     render() {
@@ -104,7 +103,7 @@ export default class FlipboardCover extends Component {
                     <CloseIcon />
                 </View>
                 <View style={styles.dividerContainer}>
-                    <View style={styles.divider}></View>
+                    <View style={styles.divider} />
                     <Text style={styles.dividerLabel}>QUICK CHAT</Text>
                 </View>
                 <ScrollView style={styles.quickChatContainer} horizontal showsHorizontalScrollIndicator={false}>
@@ -113,7 +112,7 @@ export default class FlipboardCover extends Component {
                 <ScrollView style={styles.tabbar} horizontal showsHorizontalScrollIndicator={false} contentInset={{top: 0, left: 150, bottom: 0, right: 0}} contentOffset={{x: -150, y: 0}}>
                     <View style={styles.tabbarItem}>
                         <Text style={[
-                            styles.tabbarItemText, 
+                            styles.tabbarItemText,
                             styles.tabbarItemTextSelected
                             ]}>NEW FRIENDS</Text>
                     </View>
@@ -125,6 +124,6 @@ export default class FlipboardCover extends Component {
                     {friends.map((item, i) => <SearchItem key={i} {...item}/>)}
                 </View>
             </ScrollView>
-        )
+        );
     }
 }

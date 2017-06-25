@@ -1,8 +1,7 @@
-import React from 'react'
-import { StyleSheet, View, Text, TextInput, Button, TouchableOpacity } from 'react-native'
+import React from 'react';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 
-const colorLight = '#E8E8E8'
-const colorPrimary = '#4EAAF0'
+const colorPrimary = '#4EAAF0';
 
 const styles = StyleSheet.create({
     button: {
@@ -19,7 +18,7 @@ const styles = StyleSheet.create({
     primary: {
         color: colorPrimary
     }
-})
+});
 
 const MessageButton = ({onPress, title, style, valid, primary}) => (
     <TouchableOpacity onPress={onPress}>
@@ -31,5 +30,5 @@ const MessageButton = ({onPress, title, style, valid, primary}) => (
                 ]}>{title}</Text>
         </View>
     </TouchableOpacity>
-)
-export default MessageButton
+);
+export default MessageButton;

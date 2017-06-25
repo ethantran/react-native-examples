@@ -1,16 +1,16 @@
-import React, { Component } from 'react'
-import { StyleSheet, View, Image, Text } from 'react-native'
-import { EvilIcons, Ionicons, FontAwesome, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import React, { Component } from 'react';
+import { StyleSheet, View, Image, Text } from 'react-native';
+import { EvilIcons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 
-import randomuser from '../randomuser'
-import randomimage from '../randomimage'
+import randomuser from '../randomuser';
+import randomimage from '../randomimage';
 
 const article = {
     source: { uri: randomimage() }, imageCredit: 'unsplash.com', authors: [
         { name: 'Lorem Ipsum', source: { uri: randomuser() } },
         { name: 'Dolor Sit', source: { uri: randomuser() } }
     ], views: '43K', flips: '406K', followers: '2.7K', stories: '1.3K', name: 'Lorem Ipsum', categories: ['Lorem', 'Ipsum', 'Dolor', 'Sit']
-}
+};
 
 const styles = StyleSheet.create({
     container: {
@@ -94,21 +94,21 @@ const styles = StyleSheet.create({
         backgroundColor: 'transparent',
         fontSize: 9
     }
-})
+});
 
-const GearIcon = () => <EvilIcons style={styles.toolbarItem} name="gear" size={30} color="white" />
+const GearIcon = () => <EvilIcons style={styles.toolbarItem} name="gear" size={30} color="white" />;
 
-const ShareIcon = () => <EvilIcons style={styles.toolbarItem} name="share-apple" size={30} color="white" />
+const ShareIcon = () => <EvilIcons style={styles.toolbarItem} name="share-apple" size={30} color="white" />;
 
-const LeftArrowIcon = () => <MaterialCommunityIcons name="arrow-left" size={30} color="white" />
+const LeftArrowIcon = () => <MaterialCommunityIcons name="arrow-left" size={30} color="white" />;
 
-const CreateIcon = () => <MaterialIcons name="create" size={30} color="white" />
+const CreateIcon = () => <MaterialIcons name="create" size={30} color="white" />;
 
-const HeartIcon = () => <MaterialCommunityIcons name="heart-outline" size={30} color="white" />
+const HeartIcon = () => <MaterialCommunityIcons name="heart-outline" size={30} color="white" />;
 
-const AddIcon = () => <MaterialIcons name="add" size={30} color="white" />
+const AddIcon = () => <MaterialIcons name="add" size={30} color="white" />;
 
-const MoreVertIcon = () => <MaterialIcons name="more-vert" size={30} color="white" />
+const MoreVertIcon = () => <MaterialIcons name="more-vert" size={30} color="white" />;
 
 export default class FlipboardCover extends Component {
     render() {
@@ -149,6 +149,6 @@ export default class FlipboardCover extends Component {
                     </View>
                 </View>
             </View>
-        )
+        );
     }
 }

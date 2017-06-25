@@ -1,8 +1,8 @@
-import React from 'react'
-import { StyleSheet, View, Text, TextInput, TouchableOpacity } from 'react-native'
+import React from 'react';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 
-const colorLight = '#E8E8E8'
-const colorPrimary = '#4EAAF0'
+const colorLight = '#E8E8E8';
+const colorPrimary = '#4EAAF0';
 
 const styles = StyleSheet.create({
     inputContainer: {
@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
     textSelected: {
         color: colorPrimary
     }
-})
+});
 
 const MessageFormSelect = ({ labelText, optional, items, selected, onPress }) => (
     <View style={styles.inputContainer}>
@@ -59,10 +59,10 @@ const MessageFormSelect = ({ labelText, optional, items, selected, onPress }) =>
                                 selected === item && styles.textSelected
                             ]}>{item}</Text>
                         </View>
-                    )
+                    );
                 })}
             </View>
         </TouchableOpacity>
     </View>
-)
-export default MessageFormSelect
+);
+export default MessageFormSelect;

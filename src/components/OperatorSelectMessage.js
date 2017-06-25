@@ -1,12 +1,12 @@
-import React from 'react'
-import { StyleSheet, View, Text } from 'react-native'
+import React from 'react';
+import { StyleSheet, View, Text } from 'react-native';
 
-import Message from './OperatorMessage'
-import MessageText from './OperatorMessageText'
-import MessageButton from './OperatorMessageButton'
+import Message from './OperatorMessage';
+import MessageText from './OperatorMessageText';
+import MessageButton from './OperatorMessageButton';
 
-const colorLight = '#E8E8E8'
-const colorPrimary = '#4EAAF0'
+const colorLight = '#E8E8E8';
+const colorPrimary = '#4EAAF0';
 
 const styles = StyleSheet.create({
     container: {
@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
     textSelected: {
         color: 'white'
     }
-})
+});
 
 const SelectMessage = ({ text, items, selected, onPress, buttonTitle, valid, ...props }) => (
     <Message {...props}>
@@ -41,9 +41,9 @@ const SelectMessage = ({ text, items, selected, onPress, buttonTitle, valid, ...
                         selected === item && styles.textSelected
                     ]}>{item}</Text>
                 </View>
-            )
+            );
         })}
         <MessageButton title={buttonTitle} onPress={onPress} valid={valid} />
     </Message>
-)
-export default SelectMessage
+);
+export default SelectMessage;

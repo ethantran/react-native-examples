@@ -1,8 +1,7 @@
-import React from 'react'
-import { StyleSheet, View, Text, TextInput, Button, TouchableOpacity } from 'react-native'
+import React from 'react';
+import { StyleSheet, View, Text } from 'react-native';
 
-const colorLight = '#E8E8E8'
-const colorPrimary = '#4EAAF0'
+const colorLight = '#E8E8E8';
 
 const styles = StyleSheet.create({
     textContainer: {
@@ -21,11 +20,11 @@ const styles = StyleSheet.create({
         color: 'white',
         textAlign: 'right'
     }
-})
+});
 
 const MessageText = ({ text, me }) => (
     <View style={styles.textContainer}>
         <Text style={[styles.text, me && styles.textMe]}>{text}</Text>
     </View>
-)
-export default MessageText
+);
+export default MessageText;

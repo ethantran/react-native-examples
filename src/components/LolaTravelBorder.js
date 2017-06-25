@@ -1,8 +1,8 @@
-import React from 'react'
-import { StyleSheet, View, Text } from 'react-native'
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
 
-const colorSandra = '#1363FB'
-const colorRobin = '#AFAFA5'
+const colorSandra = '#1363FB';
+const colorRobin = '#AFAFA5';
 
 const styles = StyleSheet.create({
     container: {
@@ -17,7 +17,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 3
     }
-})
+});
 const Border = ({ me, children, style }) => (
     <View style={[styles.container, style]}>
         <View style={[styles.border, { backgroundColor: me ? colorRobin : colorSandra }]} />
@@ -25,5 +25,5 @@ const Border = ({ me, children, style }) => (
             {children}
         </View>
     </View>
-)
-export default Border
+);
+export default Border;

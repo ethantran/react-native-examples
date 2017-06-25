@@ -1,7 +1,7 @@
-import React, { Component, PropTypes } from 'react'
-import { StyleSheet, StatusBar, Dimensions, View, Animated, Easing } from 'react-native'
-import { Components } from 'expo'
-const { LinearGradient: NativeLinearGradient } = Components
+import React, { Component } from 'react';
+import { StyleSheet, Animated, Easing } from 'react-native';
+import { Components } from 'expo';
+const { LinearGradient: NativeLinearGradient } = Components;
 
 class LinearGradient extends Component {
     static defaultProps = {
@@ -11,16 +11,16 @@ class LinearGradient extends Component {
     render() {
         const colors = Object.keys(this.props)
             .filter(key => key.includes('color'))
-            .map((propKey, i) => this.props[propKey])
+            .map((propKey, i) => this.props[propKey]);
         return (
             <NativeLinearGradient
                 colors={colors}
                 style={[StyleSheet.absoluteFill, this.props.style]}
             />
-        )
+        );
     }
 }
-Animated.LinearGradient = Animated.createAnimatedComponent(LinearGradient)
+Animated.LinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 class AnimatedGradient extends Component {
 
@@ -30,17 +30,17 @@ class AnimatedGradient extends Component {
 
     componentWillReceiveProps(nextProps) {
         if (nextProps.colors !== this.props.colors) {
-            this.interpolatedColors = this.interpolateColors(nextProps)
-            this.state.animatedColors.forEach(animatedColor => animatedColor.setValue(0))
+            this.interpolatedColors = this.interpolateColors(nextProps);
+            this.state.animatedColors.forEach(animatedColor => animatedColor.setValue(0));
             Animated.parallel(
                 this.state.animatedColors.map(animatedColor => {
                     return Animated.timing(animatedColor, {
                         toValue: 1,
                         duration: this.props.speed,
                         easing: Easing.linear
-                    })
+                    });
                 })
-            ).start()
+            ).start();
         }
     }
 
@@ -52,26 +52,26 @@ class AnimatedGradient extends Component {
                     this.props.colors[i],
                     colors[i] || 'transparent'
                 ]
-            })
-        })
+            });
+        });
     }
 
     interpolatedColors = this.interpolateColors(this.props)
 
     render() {
-        const { style, colors, ...props } = this.props
+        const { style, colors, ...props } = this.props; // eslint-disable-line no-unused-vars
         const colorProps = this.interpolatedColors.reduce((obj, interpolatedColor, i) => {
-            obj['color'+i] = interpolatedColor
-            return obj
-        }, {})
+            obj['color' + i] = interpolatedColor;
+            return obj;
+        }, {});
         return (
             <Animated.LinearGradient
                 {...props}
                 {...colorProps}
                 style={[StyleSheet.absoluteFill, style]}
             />
-        )
+        );
     }
 }
 
-export default AnimatedGradient
+export default AnimatedGradient;

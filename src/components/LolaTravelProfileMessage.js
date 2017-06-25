@@ -1,8 +1,7 @@
-import React from 'react'
-import { StyleSheet, View, Text, Image } from 'react-native'
+import React from 'react';
+import { StyleSheet, View, Text, Image } from 'react-native';
 
-const colorSandra = '#1363FB'
-const colorRobin = '#AFAFA5'
+const colorRobin = '#AFAFA5';
 
 const styles = StyleSheet.create({
     container: {
@@ -23,12 +22,12 @@ const styles = StyleSheet.create({
         color: colorRobin,
         fontWeight: 'bold'
     }
-})
+});
 
 const ProfileMessage = ({source, text}) => (
     <View style={styles.container}>
         <Image style={styles.image} source={source} />
         <Text style={styles.text}>{text}</Text>
     </View>
-)
-export default ProfileMessage
+);
+export default ProfileMessage;

@@ -1,14 +1,14 @@
-import React from 'react'
-import { StyleSheet, View, Text } from 'react-native'
+import React from 'react';
+import { StyleSheet, View, Text } from 'react-native';
 
-import Border from './LolaTravelBorder'
+import Border from './LolaTravelBorder';
 
-const colorSandra = '#1363FB'
-const colorRobin = '#AFAFA5'
+const colorSandra = '#1363FB';
+const colorRobin = '#AFAFA5';
 
 const styles = StyleSheet.create({
-    container: { 
-        marginBottom: 20 
+    container: {
+        marginBottom: 20
     },
     name: {
         fontWeight: 'bold'
@@ -16,7 +16,7 @@ const styles = StyleSheet.create({
     text: {
         lineHeight: 23
     },
-})
+});
 
 const TextMessage = ({user, text, me}) => (
     <View style={styles.container}>
@@ -27,6 +27,6 @@ const TextMessage = ({user, text, me}) => (
             </View>
         </Border>
     </View>
-)
+);
 
-export default TextMessage
+export default TextMessage;

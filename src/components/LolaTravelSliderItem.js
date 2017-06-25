@@ -1,8 +1,5 @@
-import React from 'react'
-import { StyleSheet, View, Text, Image } from 'react-native'
-
-const colorSandra = '#1363FB'
-const colorRobin = '#AFAFA5'
+import React from 'react';
+import { StyleSheet, View, Text, Image } from 'react-native';
 
 const styles = StyleSheet.create({
     container: {
@@ -44,7 +41,7 @@ const styles = StyleSheet.create({
     text: {
         padding: 10,
     }
-})
+});
 
 const SliderItem = ({source, title, text}) => (
     <View style={styles.container}>
@@ -56,5 +53,5 @@ const SliderItem = ({source, title, text}) => (
             <Text style={styles.text}>{text}</Text>
         </View>
     </View>
-)
-export default SliderItem
+);
+export default SliderItem;
