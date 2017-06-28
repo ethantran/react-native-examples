@@ -3,6 +3,10 @@ import { StyleSheet, Animated, Easing } from 'react-native';
 import { Components } from 'expo';
 const { LinearGradient: NativeLinearGradient } = Components;
 
+/**
+ * Problem: LinearGradient requires an array for colors but animated values cannot
+ * Solution: Map through all prop keys following pattern color0, color1, color2, ...
+ */
 class LinearGradient extends Component {
     static defaultProps = {
         start: [0, 0.4],

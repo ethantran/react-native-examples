@@ -1,5 +1,5 @@
-import React, { Component } from 'react'
-import { StyleSheet, View, Animated } from 'react-native'
+import React, { Component } from 'react';
+import { StyleSheet, Animated } from 'react-native';
 
 const styles = StyleSheet.create({
     container: {
@@ -9,27 +9,27 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         borderColor: '#7BF9DA'
     }
-})
+});
 
-export default class AnchorRadialChild extends React.Component {
+export default class AnchorRadialChild extends Component {
     static defaultProps = {
         borderWidth: 3,
         playing: false
     }
     borderWidth = new Animated.Value(0)
     componentDidMount() {
-        this.onPlayingUpdate(this.props.playing)
+        this.onPlayingUpdate(this.props.playing);
     }
     componentWillReceiveProps(nextProps) {
         if (nextProps.playing !== this.props.playing) {
-            this.onPlayingUpdate(nextProps.playing)
+            this.onPlayingUpdate(nextProps.playing);
         }
     }
     onPlayingUpdate(playing) {
         Animated.spring(this.borderWidth, {
             toValue: playing ? this.props.borderWidth : 0,
             friction: 5
-        }).start()
+        }).start();
     }
     render() {
         return (
@@ -41,6 +41,6 @@ export default class AnchorRadialChild extends React.Component {
                 ]}>
                 {this.props.children}
             </Animated.View>
-        )
+        );
     }
 }

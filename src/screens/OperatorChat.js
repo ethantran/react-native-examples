@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 
 import randomuser from '../randomuser';
 import randomimage from '../randomimage';
@@ -31,14 +31,6 @@ const messages = [
     { type: 'product', user: userOperator, text: 'Lorem ipsum dolor sit amet', avatar: { uri: randomuser() }, source: { uri: randomimage(200, 200) }, creator: 'Lorem', name: 'Lorem Ipsum', price: '$24.95', buttonTitle: 'Lorem Ipsum Dolor' }
 ];
 const colorLight = '#E8E8E8';
-const colorDark = '#666666';
-const colorPrimary = '#4EAAF0';
-
-const styles = StyleSheet.create({
-    containerSlider: {
-        padding: 25
-    }
-});
 
 function renderMessage(message, i) {
     if (message.type === 'input') {

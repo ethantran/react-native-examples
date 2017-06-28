@@ -1,8 +1,8 @@
-import React from 'react'
-import { StyleSheet, View, Text, Image } from 'react-native'
-import { Svg } from 'expo'
+import React from 'react';
+import { StyleSheet, View, Text, Image } from 'react-native';
+import { Svg } from 'expo';
 
-import IconSvgPath from '../components/SnapchatIconSvgPath'
+import IconSvgPath from '../components/SnapchatIconSvgPath';
 
 const styles = StyleSheet.create({
     container: {
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
         color: '#D3D5D9',
         fontSize: 10
     }
-})
+});
 
 const QuickChatItem = ({ source, name, username, count }) => (
     <View style={styles.container}>
@@ -55,5 +55,5 @@ const QuickChatItem = ({ source, name, username, count }) => (
             <Text style={styles.username}>{username}   {count}</Text>
         </View>
     </View>
-)
-export default QuickChatItem
+);
+export default QuickChatItem;
