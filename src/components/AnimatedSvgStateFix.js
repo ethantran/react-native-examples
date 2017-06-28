@@ -2,13 +2,9 @@ import React, { Component } from 'react';
 import omit from 'lodash/omit';
 
 /**
- * Problem: Some props cannot be animated through setNativeProps, such as fill and stroke
+ * Problem: Some props cannot be animated through setNativeProps
  * Solution: Use state for those and use setNativeProps for the rest
  */
-
-const KEYS = [
-    'fill', 'stroke'
-];
 
 function createState(props, keys) {
     return keys.reduce((acc, key) => {
@@ -21,7 +17,6 @@ function createState(props, keys) {
 }
 
 export default function SvgStateFix(WrappedComponent, propToStateKeys = [], { cancelSetNativeProps } = {}) {
-    propToStateKeys = [...KEYS, ...propToStateKeys];
     return class extends Component {
         state = createState(this.props, propToStateKeys);
         setNativeProps = (props) => {

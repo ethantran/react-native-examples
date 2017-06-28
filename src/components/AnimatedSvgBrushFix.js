@@ -1,26 +1,21 @@
 import React, { Component } from 'react';
-import omit from 'lodash/omit';
 import Color from 'color';
 
 /**
  * Problem: Color props such as fill and stroke cannot be animated through setNativeProps. They can be animated through state, but setNativeProps is better
- * Solution: Extract brush, update propList
+ * Solution: Extract brush, update propList (does not seem to do anything but to be consistent extractProps I did it anyway)
  */
 
-// https://github.com/react-native-community/react-native-svg/blob/master/lib/extract/patternReg.js
+// https://github.com/react-native-community/react-native-svg/blob/master/lib/extract/extractBrush.js
 function extractBrush(colorOrBrush) {
-    /*eslint eqeqeq:0*/
     if (colorOrBrush === 'none' || colorOrBrush == null) {
         return null;
     }
-
     try {
         let matched = colorOrBrush.match(/^url\(#(.+?)\)$/);
-        // brush
         if (matched) {
             return [1, matched[1]];
-            //todo:
-        } else { // solid color
+        } else {
             let c = new Color(colorOrBrush).rgbaArray();
             return [0, c[0] / 255, c[1] / 255, c[2] / 255, c[3]];
         }
@@ -54,6 +49,7 @@ function getPropList(nextProps, prevProps) {
             propList.push(name);
         }
     });
+    return propList;
 }
 
 const KEYS = ['fill', 'stroke'];
@@ -69,7 +65,6 @@ export default function SvgStateFix(WrappedComponent) {
                 }
                 return acc;
             }, props);
-            // console.log(props.fill)
             this._component && this._component.setNativeProps(props);
         }
         render() {
