@@ -25,6 +25,14 @@ export default class Main extends Component {
                     title="AnchorWalkthrough"
                     onPress={() => this.props.navigation.navigate('AnchorWalkthrough')}
                 />
+                <Button
+                    title="PixelBlurAnimation"
+                    onPress={() => this.props.navigation.navigate('PixelBlurAnimation')}
+                />
+                <Button
+                    title="SvgAnimation"
+                    onPress={() => this.props.navigation.navigate('SvgAnimation')}
+                />
             </View>
         );
     }
