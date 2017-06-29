@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Svg } from 'expo';
-import AnimatedSvgFix from './AnimatedSvgFix';
+import AnimatedSvgTextFix from './AnimatedSvgTextFix';
 
 /**
  * BUG: does not even render anything
@@ -21,7 +21,5 @@ class SvgTSpan extends Component {
         );
     }
 }
-SvgTSpan = AnimatedSvgFix(SvgTSpan, {
-    propString: ['fontSize']
-});
+SvgTSpan = AnimatedSvgTextFix(SvgTSpan);
 export default SvgTSpan;

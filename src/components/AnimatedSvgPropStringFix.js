@@ -12,9 +12,6 @@ const KEYS = [
 export default function SvgPropStringFix(WrappedComponent, propKeys = []) {
     propKeys = [...KEYS, ...propKeys];
     return class extends Component {
-        // componentDidMount() {
-        //     this.setNativeProps(this.props);
-        // }
         setNativeProps = (props) => {
             propKeys.reduce((acc, key) => {
                 const val = props[key];
@@ -23,7 +20,6 @@ export default function SvgPropStringFix(WrappedComponent, propKeys = []) {
                 }
                 return acc;
             }, props);
-            // console.log(props.scaleX, props.scaleY)
             this._component && this._component.setNativeProps(props);
         }
         render() {

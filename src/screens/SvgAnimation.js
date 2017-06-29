@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, ScrollView, Animated, Dimensions, Button } from 'react-native';
+import { StyleSheet, View, ScrollView, Animated, Dimensions, Button } from 'react-native';
 import loremipsum from 'lorem-ipsum-react-native';
 import { Svg as NativeSvg } from 'expo';
 const Defs = NativeSvg.Defs;
@@ -24,6 +24,36 @@ import RadialGradient from '../components/AnimatedSvgRadialGradient';
 import Stop from '../components/AnimatedSvgStop';
 
 const types = ['circle', 'rect', 'ellipse', 'line', 'polygon', 'polyline', 'path', 'text', 'tspan', 'textpath', 'g', 'use', 'lgrad', 'rgrad'];
+const transformAnimTypes = [
+    'origin+rotation', 'originXY+rotation',
+    'scale', 'scaleX', 'scaleY', 'scaleXY',
+    'skew', 'skewX', 'skewY', 'skewXY',
+    'translate', 'translateX', 'translateY', 'translateXY',
+    'x', 'y', 'x+y',
+];
+const defaultAnimTypes = ['none', 'defaultProps'];
+const fillAnimTypes = ['fill', 'fillOpacity'];
+const strokeAnimTypes = ['stroke', 'strokeOpacity', 'strokeWidth'];
+const gradAnimTypes = [...defaultAnimTypes, 'offset', 'offset0', 'stopColor', 'stopColor0', 'stopOpacity', 'stopOpacity0', 'onlyStop'];
+const lineAnimTypes = [...defaultAnimTypes, ...transformAnimTypes, ...strokeAnimTypes];
+const shapeAnimTypes = [...lineAnimTypes, ...fillAnimTypes];
+const textAnimTypes = [...shapeAnimTypes, 'dx', 'dy', 'dx+dy', 'dxn', 'dyn', 'fontSize', 'startOffset'];
+const animTypes = {
+    circle: shapeAnimTypes,
+    rect: shapeAnimTypes,
+    ellipse: shapeAnimTypes,
+    line: lineAnimTypes,
+    polygon: shapeAnimTypes,
+    polyline: shapeAnimTypes,
+    path: shapeAnimTypes,
+    text: textAnimTypes,
+    tspan: textAnimTypes,
+    textpath: textAnimTypes,
+    g: transformAnimTypes,
+    use: transformAnimTypes,
+    lgrad: gradAnimTypes,
+    rgrad: gradAnimTypes,
+};
 
 const styles = StyleSheet.create({
     container: {
@@ -50,6 +80,13 @@ export default class SvgAnimation extends Component {
         dx2: Math.round(randomnumber(1, 100)),
         dy2: Math.round(randomnumber(1, 100)),
 
+        px0: Math.round(randomnumber(1, 100)),
+        py0: Math.round(randomnumber(1, 100)),
+        px1: Math.round(randomnumber(1, 100)),
+        py1: Math.round(randomnumber(1, 100)),
+        px2: Math.round(randomnumber(1, 100)),
+        py2: Math.round(randomnumber(1, 100)),
+
         fx: Math.round(randomnumber(1, 100)),
         fy: Math.round(randomnumber(1, 100)),
 
@@ -72,15 +109,15 @@ export default class SvgAnimation extends Component {
         originY: Math.round(randomnumber(1, 100)),
         originXY: { x: Math.round(randomnumber(1, 100)), y: Math.round(randomnumber(1, 100)) },
 
-        scale: Math.round(randomnumber(1, 2)),
-        scaleX: Math.round(randomnumber(1, 2)),
-        scaleY: Math.round(randomnumber(1, 2)),
-        scaleXY: { x: Math.round(randomnumber(1, 2)), y: Math.round(randomnumber(1, 2)) },
+        scale: Math.round(randomnumber(1, 10)),
+        scaleX: Math.round(randomnumber(1, 10)),
+        scaleY: Math.round(randomnumber(1, 10)),
+        scaleXY: { x: Math.round(randomnumber(1, 10)), y: Math.round(randomnumber(1, 10)) },
 
-        skew: Math.round(randomnumber(1, 5)),
-        skewX: Math.round(randomnumber(1, 5)),
-        skewY: Math.round(randomnumber(1, 5)),
-        skewXY: { x: Math.round(randomnumber(1, 5)), y: Math.round(randomnumber(1, 5)) },
+        skew: Math.round(randomnumber(1, 10)),
+        skewX: Math.round(randomnumber(1, 10)),
+        skewY: Math.round(randomnumber(1, 10)),
+        skewXY: { x: Math.round(randomnumber(1, 10)), y: Math.round(randomnumber(1, 10)) },
 
         translate: Math.round(randomnumber(1, 100)),
         translateX: Math.round(randomnumber(1, 100)),
@@ -90,26 +127,22 @@ export default class SvgAnimation extends Component {
         rotate: Math.round(randomnumber(1, 360)),
         rotation: Math.round(randomnumber(1, 360)),
 
-        point0: { x: Math.round(randomnumber(1, 100)), y: Math.round(randomnumber(1, 100)) },
-        point1: { x: Math.round(randomnumber(1, 100)), y: Math.round(randomnumber(1, 100)) },
-        point2: { x: Math.round(randomnumber(1, 100)), y: Math.round(randomnumber(1, 100)) },
-
         width: Math.round(randomnumber(1, 100)),
         height: Math.round(randomnumber(1, 100)),
 
-        fill: 0,
+        inputFill: 0,
         fillOpacity: Math.random(),
 
         fontSize: Math.round(randomnumber(12, 30)),
 
-        stroke: 0,
+        inputStroke: 0,
         strokeOpacity: Math.random(),
-        strokeWidth: Math.round(randomnumber(1, 5)),
+        strokeWidth: Math.round(randomnumber(1, 10)),
 
         startOffset: Math.round(randomnumber(1, 100)),
     }
 
-    state = {}
+    state = { type: '', animType: 'none' }
 
     componentDidMount() {
         const propKeys = Object.keys(SvgAnimation.defaultProps);
@@ -122,17 +155,14 @@ export default class SvgAnimation extends Component {
             }
         });
         this.d = 'm72.5,167.5c1,0 67,-36 151,2c84,38 166,-15 165.5,-15.5';
-        this.points = propKeys
-            .filter(key => key.includes('point'))
-            .map((key, i) => this[key]);
-        this.interpolatedFill = this.fill.interpolate({
+        this.fill = this.inputFill.interpolate({
             inputRange: [0, 1],
             outputRange: [
                 startColor,
                 endColor
             ]
         });
-        this.interpolatedStroke = this.stroke.interpolate({
+        this.stroke = this.inputFill.interpolate({
             inputRange: [0, 1],
             outputRange: [
                 endColor,
@@ -146,11 +176,6 @@ export default class SvgAnimation extends Component {
         if (this.stopAnimate) {
             return;
         }
-        const pointsAnimations = this.points.map(animatedValue => {
-            return Animated.spring(animatedValue, {
-                toValue: { x: randomnumber(1, 100), y: randomnumber(1, 100) }
-            });
-        });
         Animated.parallel([
             Animated.spring(this.cx, { toValue: Math.round(randomnumber(1, 100)) }),
             Animated.spring(this.cy, { toValue: Math.round(randomnumber(1, 100)) }),
@@ -168,8 +193,12 @@ export default class SvgAnimation extends Component {
             Animated.spring(this.dx2, { toValue: Math.round(randomnumber(1, 100)) }),
             Animated.spring(this.dy2, { toValue: Math.round(randomnumber(1, 100)) }),
 
-            Animated.spring(this.width, { toValue: Math.round(randomnumber(1, 100)) }),
-            Animated.spring(this.height, { toValue: Math.round(randomnumber(1, 100)) }),
+            Animated.spring(this.px0, { toValue: Math.round(randomnumber(1, 100)) }),
+            Animated.spring(this.py0, { toValue: Math.round(randomnumber(1, 100)) }),
+            Animated.spring(this.px1, { toValue: Math.round(randomnumber(1, 100)) }),
+            Animated.spring(this.py1, { toValue: Math.round(randomnumber(1, 100)) }),
+            Animated.spring(this.px2, { toValue: Math.round(randomnumber(1, 100)) }),
+            Animated.spring(this.py2, { toValue: Math.round(randomnumber(1, 100)) }),
 
             Animated.spring(this.r, { toValue: Math.round(randomnumber(1, 100)) }),
             Animated.spring(this.rx, { toValue: Math.round(randomnumber(1, 100)) }),
@@ -185,8 +214,9 @@ export default class SvgAnimation extends Component {
 
             Animated.spring(this.fontSize, { toValue: Math.round(randomnumber(12, 30)) }),
             Animated.spring(this.startOffset, { toValue: Math.round(randomnumber(1, 100)) }),
-            Animated.spring(this.rotate, { toValue: Math.round(randomnumber(1, 360)) }),
-            Animated.spring(this.rotation, { toValue: Math.round(randomnumber(1, 360)) }),
+
+            Animated.spring(this.width, { toValue: Math.round(randomnumber(1, 100)) }),
+            Animated.spring(this.height, { toValue: Math.round(randomnumber(1, 100)) }),
 
             Animated.spring(this.offset0, { toValue: Math.max(0.49, Math.random()) }),
             Animated.spring(this.offset1, { toValue: Math.min(0.51, Math.random()) }),
@@ -198,18 +228,18 @@ export default class SvgAnimation extends Component {
                 toValue: { x: randomnumber(1, 100), y: randomnumber(1, 100) }
             }),
 
-            Animated.spring(this.scale, { toValue: Math.round(randomnumber(1, 2)) }),
-            Animated.spring(this.scaleX, { toValue: Math.round(randomnumber(1, 2)) }),
-            Animated.spring(this.scaleY, { toValue: Math.round(randomnumber(1, 2)) }),
+            Animated.spring(this.scale, { toValue: Math.round(randomnumber(1, 10)) }),
+            Animated.spring(this.scaleX, { toValue: Math.round(randomnumber(1, 10)) }),
+            Animated.spring(this.scaleY, { toValue: Math.round(randomnumber(1, 10)) }),
             Animated.spring(this.scaleXY, {
-                toValue: { x: randomnumber(1, 2), y: randomnumber(1, 2) }
+                toValue: { x: randomnumber(1, 10), y: randomnumber(1, 10) }
             }),
 
-            Animated.spring(this.skew, { toValue: Math.round(randomnumber(1, 5)) }),
-            Animated.spring(this.skewX, { toValue: Math.round(randomnumber(1, 5)) }),
-            Animated.spring(this.skewY, { toValue: Math.round(randomnumber(1, 5)) }),
+            Animated.spring(this.skew, { toValue: Math.round(randomnumber(1, 10)) }),
+            Animated.spring(this.skewX, { toValue: Math.round(randomnumber(1, 10)) }),
+            Animated.spring(this.skewY, { toValue: Math.round(randomnumber(1, 10)) }),
             Animated.spring(this.skewXY, {
-                toValue: { x: randomnumber(1, 5), y: randomnumber(1, 5) }
+                toValue: { x: randomnumber(1, 10), y: randomnumber(1, 10) }
             }),
 
             Animated.spring(this.translate, { toValue: Math.round(randomnumber(1, 100)) }),
@@ -219,14 +249,15 @@ export default class SvgAnimation extends Component {
                 toValue: { x: randomnumber(1, 100), y: randomnumber(1, 100) }
             }),
 
-            Animated.spring(this.fill, { toValue: Math.random() }),
+            Animated.spring(this.rotate, { toValue: Math.round(randomnumber(1, 360)) }),
+            Animated.spring(this.rotation, { toValue: Math.round(randomnumber(1, 360)) }),
+
+            Animated.spring(this.inputFill, { toValue: Math.random() }),
             Animated.spring(this.fillOpacity, { toValue: Math.random() }),
 
-            Animated.spring(this.stroke, { toValue: Math.random() }),
+            Animated.spring(this.inputStroke, { toValue: Math.random() }),
             Animated.spring(this.strokeOpacity, { toValue: Math.random() }),
-            Animated.spring(this.strokeWidth, { toValue: randomnumber(1, 5) }),
-
-            ...pointsAnimations,
+            Animated.spring(this.strokeWidth, { toValue: randomnumber(1, 10) }),
         ]).start(() => this.animate());
     }
 
@@ -240,27 +271,124 @@ export default class SvgAnimation extends Component {
         });
     }
 
+    getProps(normalProps) {
+        if (this.state.animType === 'origin+rotation') {
+            return {
+                ...normalProps,
+                rotation: this.rotation,
+                origin: this.origin
+            };
+        }
+        if (this.state.animType === 'originXY+rotation') {
+            return {
+                ...normalProps,
+                rotation: this.rotation,
+                origin: this.originXY
+            };
+        }
+        if (this.state.animType === 'scaleXY') {
+            return {
+                ...normalProps,
+                scale: this.scaleXY
+            };
+        }
+        if (this.state.animType === 'skewXY') {
+            return {
+                ...normalProps,
+                skew: this.skewXY
+            };
+        }
+        if (this.state.animType === 'translateXY') {
+            return {
+                ...normalProps,
+                translate: this.translateXY
+            };
+        }
+        if (this.state.animType === 'x+y') {
+            return {
+                ...normalProps,
+                x: this.x,
+                y: this.y
+            };
+        }
+        if (this.state.animType === 'stroke') {
+            return {
+                ...normalProps,
+                stroke: this.stroke,
+                strokeWidth: '3'
+            };
+        }
+        if (this.state.animType === 'strokeOpacity') {
+            return {
+                ...normalProps,
+                stroke: randomcolor(),
+                strokeWidth: '3',
+                strokeOpacity: this.strokeOpacity
+            };
+        }
+        if (this.state.animType === 'strokeWidth') {
+            return {
+                ...normalProps,
+                stroke: randomcolor(),
+                strokeWidth: this.strokeWidth
+            };
+        }
+        if (this.state.animType === 'dx+dy') {
+            return {
+                ...normalProps,
+                fill: randomcolor(),
+                stroke: randomcolor(),
+                dx: this.dx,
+                dy: this.dy
+            };
+        }
+        if (this.state.animType === 'dxn') {
+            return {
+                ...normalProps,
+                fill: randomcolor(),
+                stroke: randomcolor(),
+                dx0: this.dx0,
+                dx1: this.dx1,
+                dx2: this.dx2
+            };
+        }
+        if (this.state.animType === 'dyn') {
+            return {
+                ...normalProps,
+                fill: randomcolor(),
+                stroke: randomcolor(),
+                dy0: this.dy0,
+                dy1: this.dy1,
+                dy2: this.dy2
+            };
+        }
+        if (this.state.animType === 'defaultProps') {
+            return Object.keys(normalProps).reduce((acc, key) => {
+                acc[key] = this[key];
+                return acc;
+            }, {});
+        }
+        return {
+            ...normalProps,
+            [this.state.animType]: this[this.state.animType]
+        };
+    }
+
     renderCircle() {
         if (this.state.type !== 'circle') {
             return null;
         }
+        const normalProps = {
+            r: SvgAnimation.defaultProps.r,
+            cy: SvgAnimation.defaultProps.cy,
+            cx: SvgAnimation.defaultProps.cx
+        };
+        let props = this.getProps(normalProps);
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
                 <Circle
                     ref={ref => (this.circle = ref)}
-                    r={this.r}
-                    cx={this.cx}
-                    cy={this.cy}
-                    fill={this.interpolatedFill}
-                    fillOpacity={this.fillOpacity}
-                    stroke={this.interpolatedStroke}
-                    strokeOpacity={this.strokeOpacity}
-                    strokeWidth={this.strokeWidth}
-                    rotation={this.rotation}
-                    origin={this.origin}
-                    scale={this.scale}
-                    skew={this.skew}
-                    translate={this.translate}
+                    {...props}
                 />
             </Svg>
         );
@@ -270,22 +398,16 @@ export default class SvgAnimation extends Component {
         if (this.state.type !== 'rect') {
             return null;
         }
+        const normalProps = {
+            width: SvgAnimation.defaultProps.width,
+            height: SvgAnimation.defaultProps.height
+        };
+        let props = this.getProps(normalProps);
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
                 <Rect
                     ref={ref => (this.rect = ref)}
-                    width={this.width}
-                    height={this.height}
-                    fill={this.interpolatedFill}
-                    fillOpacity={this.fillOpacity}
-                    stroke={this.interpolatedStroke}
-                    strokeOpacity={this.strokeOpacity}
-                    strokeWidth={this.strokeWidth}
-                    rotation={this.rotation}
-                    origin={this.origin}
-                    scale={this.scale}
-                    skew={this.skew}
-                    translate={this.translate}
+                    {...props}
                 />
             </Svg>
         );
@@ -295,24 +417,18 @@ export default class SvgAnimation extends Component {
         if (this.state.type !== 'ellipse') {
             return null;
         }
+        const normalProps = {
+            cx: SvgAnimation.defaultProps.cx,
+            cy: SvgAnimation.defaultProps.cy,
+            rx: SvgAnimation.defaultProps.rx,
+            ry: SvgAnimation.defaultProps.ry,
+        };
+        let props = this.getProps(normalProps);
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
                 <Ellipse
                     ref={ref => (this.ellipse = ref)}
-                    cx={this.cx}
-                    cy={this.cy}
-                    rx={this.rx}
-                    ry={this.ry}
-                    fill={this.interpolatedFill}
-                    fillOpacity={this.fillOpacity}
-                    stroke={this.interpolatedStroke}
-                    strokeOpacity={this.strokeOpacity}
-                    strokeWidth={this.strokeWidth}
-                    rotation={this.rotation}
-                    origin={this.origin}
-                    scale={this.scale}
-                    skew={this.skew}
-                    translate={this.translate}
+                    {...props}
                 />
             </Svg>
         );
@@ -322,22 +438,20 @@ export default class SvgAnimation extends Component {
         if (this.state.type !== 'line') {
             return null;
         }
+        const normalProps = {
+            x1: SvgAnimation.defaultProps.x1,
+            x2: SvgAnimation.defaultProps.x2,
+            y1: SvgAnimation.defaultProps.y1,
+            y2: SvgAnimation.defaultProps.y2,
+            stroke: randomcolor(),
+            strokeWidth: '3'
+        };
+        let props = this.getProps(normalProps);
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
                 <Line
                     ref={ref => (this.line = ref)}
-                    x1={this.x1}
-                    y1={this.y1}
-                    x2={this.x2}
-                    y2={this.y2}
-                    stroke={this.interpolatedStroke}
-                    strokeOpacity={this.strokeOpacity}
-                    strokeWidth={this.strokeWidth}
-                    rotation={this.rotation}
-                    origin={this.origin}
-                    scale={this.scale}
-                    skew={this.skew}
-                    translate={this.translate}
+                    {...props}
                 />
             </Svg>
         );
@@ -347,25 +461,30 @@ export default class SvgAnimation extends Component {
         if (this.state.type !== 'polygon') {
             return null;
         }
-        const pointProps = this.points.reduce((acc, animatedValue, i) => {
-            acc['point' + i] = animatedValue;
-            return acc;
-        }, {});
+        let normalProps = {
+            points: '40,5 70,80 25,95',
+            fill: randomcolor(),
+            stroke: randomcolor(),
+            strokeWidth: '1'
+        };
+        let props = this.getProps(normalProps);
+        if (this.state.animType === 'defaultProps') {
+            props = {
+                ...normalProps,
+                points: undefined,
+                px0: this.px0,
+                px1: this.px1,
+                px2: this.px2,
+                py0: this.py0,
+                py1: this.py1,
+                py2: this.py2,
+            };
+        }
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
                 <Polygon
                     ref={ref => (this.polygon = ref)}
-                    fill={this.interpolatedFill}
-                    fillOpacity={this.fillOpacity}
-                    stroke={this.interpolatedStroke}
-                    strokeOpacity={this.strokeOpacity}
-                    strokeWidth={this.strokeWidth}
-                    rotation={this.rotation}
-                    origin={this.origin}
-                    scale={this.scale}
-                    skew={this.skew}
-                    translate={this.translate}
-                    {...pointProps}
+                    {...props}
                 />
             </Svg>
         );
@@ -375,24 +494,30 @@ export default class SvgAnimation extends Component {
         if (this.state.type !== 'polyline') {
             return null;
         }
-        const pointProps = this.points.reduce((acc, animatedValue, i) => {
-            acc['point' + i] = animatedValue;
-            return acc;
-        }, {});
+        const normalProps = {
+            points: '40,5 70,80 25,95',
+            fill: 'none',
+            stroke: randomcolor(),
+            strokeWidth: '3'
+        };
+        let props = this.getProps(normalProps);
+        if (this.state.animType === 'defaultProps') {
+            props = {
+                ...normalProps,
+                points: undefined,
+                px0: this.px0,
+                px1: this.px1,
+                px2: this.px2,
+                py0: this.py0,
+                py1: this.py1,
+                py2: this.py2,
+            };
+        }
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
                 <Polyline
                     ref={ref => (this.polyline = ref)}
-                    fill="none"
-                    stroke={this.interpolatedStroke}
-                    strokeOpacity={this.strokeOpacity}
-                    strokeWidth={this.strokeWidth}
-                    rotation={this.rotation}
-                    origin={this.origin}
-                    scale={this.scale}
-                    skew={this.skew}
-                    translate={this.translate}
-                    {...pointProps}
+                    {...props}
                 />
             </Svg>
         );
@@ -402,21 +527,15 @@ export default class SvgAnimation extends Component {
         if (this.state.type !== 'path') {
             return null;
         }
+        const normalProps = {
+            d: this.d
+        };
+        let props = this.getProps(normalProps);
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
                 <Path
                     ref={ref => (this.path = ref)}
-                    d={this.d}
-                    fill={this.interpolatedFill}
-                    fillOpacity={this.fillOpacity}
-                    stroke={this.interpolatedStroke}
-                    strokeOpacity={this.strokeOpacity}
-                    strokeWidth={this.strokeWidth}
-                    rotation={this.rotation}
-                    origin={this.origin}
-                    scale={this.scale}
-                    skew={this.skew}
-                    translate={this.translate}
+                    {...props}
                 />
             </Svg>
         );
@@ -426,21 +545,15 @@ export default class SvgAnimation extends Component {
         if (this.state.type !== 'text') {
             return null;
         }
+        const normalProps = {
+            fontSize: 40
+        };
+        let props = this.getProps(normalProps);
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
                 <Text
                     ref={ref => (this.text = ref)}
-                    fontSize={this.fontSize}
-                    fill={this.interpolatedFill}
-                    fillOpacity={this.fillOpacity}
-                    stroke={this.interpolatedStroke}
-                    strokeOpacity={this.strokeOpacity}
-                    strokeWidth={this.strokeWidth}
-                    rotation={this.rotation}
-                    origin={this.origin}
-                    scale={this.scale}
-                    skew={this.skew}
-                    translate={this.translate}
+                    {...props}
                 >abc</Text>
             </Svg>
         );
@@ -478,9 +591,9 @@ export default class SvgAnimation extends Component {
         //             <TSpan x={this.x1} dy={this.y1}>tspan line 2</TSpan>
         //             <TSpan x={this.x2} dx={this.y2} dy={this.cx}>tspan line 3</TSpan>
         //         </Text>
-        //         <Text x="10" y="60" fill={this.interpolatedFill} fontSize={this.fontSize}>
+        //         <Text x="10" y="60" fill={this.fill} fontSize={this.fontSize}>
         //             <TSpan dy={this.cy}>12345</TSpan>
-        //             <TSpan fill={this.interpolatedStroke} dx={this.dx} dy={this.dy}>
+        //             <TSpan fill={this.stroke} dx={this.dx} dy={this.dy}>
         //                 <TSpan>6</TSpan>
         //                 <TSpan>7</TSpan>
         //             </TSpan>
@@ -495,6 +608,10 @@ export default class SvgAnimation extends Component {
         if (this.state.type !== 'textpath') {
             return null;
         }
+        const normalProps = {
+            startOffset: SvgAnimation.defaultProps.startOffset
+        };
+        let props = this.getProps(normalProps);
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
                 <Defs>
@@ -505,7 +622,7 @@ export default class SvgAnimation extends Component {
                 </Defs>
                 <G y="20">
                     <Text fill="blue">
-                        <TextPath href="#path" startOffset={this.x}>
+                        <TextPath href="#path" {...props}>
                             {loremipsum({ count: 5, units: 'words' })}
                             <NativeSvg.TSpan fill="red" dy="5,5,5">{loremipsum({ count: 5, units: 'words' })}</NativeSvg.TSpan>
                         </TextPath>
@@ -525,14 +642,10 @@ export default class SvgAnimation extends Component {
         if (this.state.type !== 'g') {
             return null;
         }
+        let props = this.getProps({});
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
-                <G
-                    rotation={this.rotation}
-                    origin={this.origin}
-                    scale={this.scale}
-                    skew={this.skew}
-                    translate={this.translate}>
+                <G {...props}>
                     <Rect
                         x="60"
                         y="20"
@@ -550,6 +663,7 @@ export default class SvgAnimation extends Component {
         if (this.state.type !== 'use') {
             return null;
         }
+        let props = this.getProps({});
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
                 <Defs>
@@ -563,11 +677,7 @@ export default class SvgAnimation extends Component {
                 </Defs>
                 <Use
                     href="#shape"
-                    rotation={this.rotation}
-                    origin={this.origin}
-                    scale={this.scale}
-                    skew={this.skew}
-                    translate={this.translate}
+                    {...props}
                 />
             </Svg>
         );
@@ -577,12 +687,46 @@ export default class SvgAnimation extends Component {
         if (this.state.type !== 'lgrad') {
             return null;
         }
+        const normalProps = {
+            x1: SvgAnimation.defaultProps.x1,
+            x2: SvgAnimation.defaultProps.x2,
+            y1: SvgAnimation.defaultProps.y1,
+            y2: SvgAnimation.defaultProps.y2,
+        };
+        let props = this.getProps(normalProps);
+        let offset0 = '0';
+        let offset1 = '1';
+        let stopColor0 = startColor;
+        let stopColor1 = endColor;
+        let stopOpacity0 = '1';
+        let stopOpacity1 = '1';
+        if (this.state.animType === 'offset' || this.state.animType === 'onlyStop' || this.state.animType === 'defaultProps') {
+            offset0 = this.offset0;
+            offset1 = this.offset1;
+        } else if (this.state.animType === 'offset0') {
+            offset0 = this.offset0;
+        }
+        if (this.state.animType === 'stopColor' || this.state.animType === 'onlyStop' || this.state.animType === 'defaultProps') {
+            stopColor0 = this.fill;
+            stopColor1 = this.stroke;
+        } else if (this.state.animType === 'stopColor0') {
+            stopColor0 = this.fill;
+        }
+        if (this.state.animType === 'stopOpacity' || this.state.animType === 'onlyStop' || this.state.animType === 'defaultProps') {
+            stopOpacity0 = this.fillOpacity;
+            stopOpacity1 = this.strokeOpacity;
+        } else if (this.state.animType === 'stopOpacity0' || this.state.animType === 'onlyStop' || this.state.animType === 'defaultProps') {
+            stopOpacity0 = this.fillOpacity;
+        }
+        if (this.state.animType !== 'defaultProps') {
+            props = normalProps;
+        }
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
                 <Defs>
-                    <LinearGradient id="grad" x1={this.x1} y1={this.y1} x2={this.x2} y2={this.y2}>
-                        <Stop offset={this.offset0} stopColor={this.interpolatedFill} stopOpacity={this.fillOpacity} />
-                        <Stop offset={this.offset1} stopColor={this.interpolatedStroke} stopOpacity={this.strokeOpacity} />
+                    <LinearGradient id="grad" {...props}>
+                        <Stop offset={offset0} stopColor={stopColor0} stopOpacity={stopOpacity0} />
+                        <Stop offset={offset1} stopColor={stopColor1} stopOpacity={stopOpacity1} />
                     </LinearGradient>
                 </Defs>
                 <Ellipse cx="150" cy="75" rx="85" ry="55" fill="url(#grad)" />
@@ -594,12 +738,48 @@ export default class SvgAnimation extends Component {
         if (this.state.type !== 'rgrad') {
             return null;
         }
+        const normalProps = {
+            cx: SvgAnimation.defaultProps.cx,
+            cy: SvgAnimation.defaultProps.cy,
+            rx: SvgAnimation.defaultProps.rx,
+            ry: SvgAnimation.defaultProps.ry,
+            fx: SvgAnimation.defaultProps.fx,
+            fy: SvgAnimation.defaultProps.fy,
+        };
+        let props = this.getProps(normalProps);
+        let offset0 = '0';
+        let offset1 = '1';
+        let stopColor0 = startColor;
+        let stopColor1 = endColor;
+        let stopOpacity0 = '1';
+        let stopOpacity1 = '1';
+        if (this.state.animType === 'offset' || this.state.animType === 'onlyStop' || this.state.animType === 'defaultProps') {
+            offset0 = this.offset0;
+            offset1 = this.offset1;
+        } else if (this.state.animType === 'offset0') {
+            offset0 = this.offset0;
+        }
+        if (this.state.animType === 'stopColor' || this.state.animType === 'onlyStop' || this.state.animType === 'defaultProps') {
+            stopColor0 = this.fill;
+            stopColor1 = this.stroke;
+        } else if (this.state.animType === 'stopColor0') {
+            stopColor0 = this.fill;
+        }
+        if (this.state.animType === 'stopOpacity' || this.state.animType === 'onlyStop' || this.state.animType === 'defaultProps') {
+            stopOpacity0 = this.fillOpacity;
+            stopOpacity1 = this.strokeOpacity;
+        } else if (this.state.animType === 'stopOpacity0' || this.state.animType === 'onlyStop' || this.state.animType === 'defaultProps') {
+            stopOpacity0 = this.fillOpacity;
+        }
+        if (this.state.animType !== 'defaultProps') {
+            props = normalProps;
+        }
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
                 <Defs>
-                    <RadialGradient id="grad" cx={this.cx} cy={this.cy} rx={this.rx} ry={this.ry} fx={this.fx} fy={this.fy} gradientUnits="userSpaceOnUse">
-                        <Stop offset="0" stopColor={this.interpolatedFill} stopOpacity={this.fillOpacity} />
-                        <Stop offset="1" stopColor={this.interpolatedStroke} stopOpacity={this.strokeOpacity} />
+                    <RadialGradient id="grad" {...props} gradientUnits="userSpaceOnUse">
+                        <Stop offset={offset0} stopColor={stopColor0} stopOpacity={stopOpacity0} />
+                        <Stop offset={offset1} stopColor={stopColor1} stopOpacity={stopOpacity1} />
                     </RadialGradient>
                 </Defs>
                 <Ellipse cx="150" cy="75" rx="85" ry="55" fill="url(#grad)" />
@@ -608,34 +788,55 @@ export default class SvgAnimation extends Component {
     }
 
     render() {
+        const anims = animTypes[this.state.type] || [];
         return (
-            <ScrollView style={styles.container}>
-                {types.map((type, i) => (
-                    <Button
-                        key={i}
-                        title={type}
-                        onPress={() => {
-                            this.stopAnimation();
-                            this.setState({ type }, () => {
-                                this.stopAnimate = false;
-                                this.animate();
-                            });
-                        }} />
-                ))}
-                {this.renderCircle()}
-                {this.renderRect()}
-                {this.renderEllipse()}
-                {this.renderLine()}
-                {this.renderPolygon()}
-                {this.renderPolyline()}
-                {this.renderPath()}
-                {this.renderText()}
-                {this.renderTextPath()}
-                {this.renderG()}
-                {this.renderUse()}
-                {this.renderLinearGradient()}
-                {this.renderRadialGradient()}
-            </ScrollView>
+            <View>
+                <ScrollView horizontal style={{ flexDirection: 'row', marginVertical: 40 }}>
+                    {types.map((type, i) => (
+                        <Button
+                            key={i}
+                            title={type}
+                            onPress={() => {
+                                this.stopAnimation();
+                                this.setState({ type, animType: 'none' }, () => {
+                                    this.stopAnimate = false;
+                                    this.animate();
+                                });
+                            }}
+                        />
+                    ))}
+                </ScrollView>
+                <ScrollView horizontal style={{ flexDirection: 'row', marginVertical: 40 }}>
+                    {anims.map((animType, i) => (
+                        <Button
+                            key={i}
+                            title={animType}
+                            onPress={() => {
+                                this.stopAnimation();
+                                this.setState({ animType }, () => {
+                                    this.stopAnimate = false;
+                                    this.animate();
+                                });
+                            }}
+                        />
+                    ))}
+                </ScrollView>
+                <ScrollView style={styles.container}>
+                    {this.renderCircle()}
+                    {this.renderRect()}
+                    {this.renderEllipse()}
+                    {this.renderLine()}
+                    {this.renderPolygon()}
+                    {this.renderPolyline()}
+                    {this.renderPath()}
+                    {this.renderText()}
+                    {this.renderTextPath()}
+                    {this.renderG()}
+                    {this.renderUse()}
+                    {this.renderLinearGradient()}
+                    {this.renderRadialGradient()}
+                </ScrollView>
+            </View>
         );
     }
 }

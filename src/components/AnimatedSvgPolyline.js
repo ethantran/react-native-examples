@@ -9,33 +9,46 @@ function extractPolyPoints(polyPoints) {
     return polyPoints.replace(/[^e]-/, ' -').split(/(?:\s+|\s*,\s*)/g).join(' ');
 }
 
-function getTotalPointKeys(props) {
-    return Object.keys(props).filter(key => key.includes('point'));
-}
-
 class SvgPolyline extends Component {
-    totalPointKeys = getTotalPointKeys(this.props)
-    componentWillReceiveProps(nextProps) {
-        if (this.totalPointKeys.some((key, index) => nextProps[key] !== this.props[key])) {
-            this.totalPointKeys = getTotalPointKeys(nextProps);
-            this.setNativeProps(nextProps);
+    constructor(props) {
+        super(props);
+        this.state = {};
+        this.updateCache(props);
+    }
+    updateCache(props) {
+        let i = 0;
+        this.points = [];
+        while (props['px' + i] != null) {
+            this.points.push({x: props['px' + i], y: props['py' + i]});
+            i++;
         }
     }
+    componentWillReceiveProps(nextProps) {
+        this.updateCache(nextProps);
+    }
     setNativeProps = (props) => {
-        if (this.totalPointKeys.some((key, index) => props[key] != null)) {
-            props.d = this.createPropsD(props, this.totalPointKeys);
+        // if some pxn or pyn exists in props that means we need to recreate d
+        if (this.points.some((key, i) => props['px' + i] != null || props['py' + i] != null)) {
+            props.d = this.createPropsD(props, this.totalKeys);
         }
         // BUG: getNativeElement() is not a function https://github.com/react-native-community/react-native-svg/issues/180
         // this._component.setNativeProps(props);
         this._component && this._component.root && this._component.root.setNativeProps(props);
         // this._component.root.setNativeProps(props);
     }
-    createPropsD = (props) => {
-        const points = this.totalPointKeys.reduce((acc, key, j) => {
-            return acc + props[key].x + ',' + props[key].y + ' ';
+    pointsToString = (props) => {
+        return this.points.reduce((acc, point, i) => {
+            const propX = props['px' + i];
+            const propY = props['py' + i];
+            const x = propX != null ? propX : point.x;
+            const y = propY != null ? propY : point.y;
+            return acc + x + ',' + y + ' ';
         }, '');
+    }
+    createPropsD = (props) => {
+        const points = this.pointsToString(props);
         // https://github.com/react-native-community/react-native-svg/blob/master/elements/Polygon.js
-        return `M${extractPolyPoints(points)}`;
+        return `M${extractPolyPoints(points)}z`;
     }
     render() {
         return (

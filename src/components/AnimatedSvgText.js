@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Svg } from 'expo';
-import AnimatedSvgFix from './AnimatedSvgFix';
+import AnimatedSvgTextFix from './AnimatedSvgTextFix';
 
 const NativeSvgText = Svg.Text;
 
@@ -17,7 +17,5 @@ class SvgText extends Component {
         );
     }
 }
-SvgText = AnimatedSvgFix(SvgText, {
-    propString: ['fontSize']
-});
+SvgText = AnimatedSvgTextFix(SvgText, { container: true });
 export default SvgText;

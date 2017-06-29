@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import Color from 'color';
+import pick from 'lodash/pick';
 
 /**
  * Problem: Color props such as fill and stroke cannot be animated through setNativeProps. They can be animated through state, but setNativeProps is better
@@ -54,18 +55,27 @@ function getPropList(nextProps, prevProps) {
 
 const KEYS = ['fill', 'stroke'];
 
-export default function SvgStateFix(WrappedComponent) {
+export default function SvgBrushFix(WrappedComponent) {
     return class extends Component {
+        constructor(props) {
+            super(props);
+            this.updateCache(props);
+        }
+        updateCache(props) {
+            this.prevProps = pick(props, KEYS);
+        }
         setNativeProps = (props) => {
-            props.propList = getPropList(props, this.props);
-            KEYS.reduce((acc, key) => {
-                const value = acc[key];
-                if (value) {
-                    acc[key] = extractBrush(value);
-                }
-                return acc;
-            }, props);
+            props.propList = getPropList(props, this.prevProps);
+            if (props.fill) {
+                props.fill = extractBrush(props.fill);
+            }
+            if (props.stroke) {
+                props.stroke = extractBrush(props.stroke);
+            }
             this._component && this._component.setNativeProps(props);
+        }
+        componentWillReceiveProps(nextProps) {
+            this.updateCache(nextProps);
         }
         render() {
             return (

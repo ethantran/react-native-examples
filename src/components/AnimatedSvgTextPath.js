@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import { Svg } from 'expo';
-import AnimatedSvgFix from './AnimatedSvgFix';
+import AnimatedSvgTextFix from './AnimatedSvgTextFix';
 
 /**
- * BUG: this._component does not have setNativeProps, I guess expo svg is not updated
+ * BUG: TextPath does not have setNativeProps
  * BUG: startOffset does not animate even with state
  */
 
@@ -22,7 +22,5 @@ class SvgTextPath extends Component {
         );
     }
 }
-SvgTextPath = AnimatedSvgFix(SvgTextPath, {
-    state: ['fontSize', 'startOffset']
-});
+SvgTextPath = AnimatedSvgTextFix(SvgTextPath, { container: true });
 export default SvgTextPath;

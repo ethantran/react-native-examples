@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
 import omit from 'lodash/omit';
+import pick from 'lodash/pick';
 import Matrix2D from '../Matrix2D';
 
 /**
  * Problem: Animating transform props is not easy
- * Solution: Use Animated.ValueXY, create matrix, use setNativeProps
+ * Solution: Use Animated.ValueXY in universal props, create matrix when ever transform props change, use setNativeProps
+ * BUG: Using Animated.ValueXY does not work because component throws error for wrong prop type (object)
  */
 
 // https://github.com/react-native-community/react-native-svg/blob/master/lib/extract/extractTransform.js
@@ -34,7 +36,7 @@ function _universal2axis(universal, axisX, axisY, defaultValue) {
 function universal2axis(key, nextProps, prevProps, defaultValue) {
     let [nextX, nextY] = _universal2axis(nextProps[key], nextProps[key + 'X'], nextProps[key + 'Y']);
     let [prevX, prevY] = _universal2axis(prevProps[key], prevProps[key + 'X'], prevProps[key + 'Y'], defaultValue);
-    return [nextX || nextY, prevX || prevY];
+    return [nextX || prevX, nextY || prevY];
 }
 function createTransformObject(nextProps, prevProps) {
     const [originX, originY] = universal2axis('origin', nextProps, prevProps);
@@ -86,37 +88,24 @@ const KEYS = [...UNIVERSAL_KEYS, 'originX', 'originY', 'scaleX', 'scaleY', 'skew
 
 export default function SvgTransformFix(WrappedComponent) {
     return class extends Component {
+        prevProps = pick(this.props, KEYS)
         setNativeProps = (props) => {
-            const matrix = createTransformMatrix(createTransformObject(props, this.props));
-            props = omit(props, KEYS);
-            this._component && this._component.setNativeProps({
-                ...props,
-                matrix
-            });
+            // if some transform key exists in props, create a new matrix
+            if (KEYS.some((key, index) => props[key] != null)) {
+                const matrix = createTransformMatrix(createTransformObject(props, this.prevProps));
+                // remove transform props since they are moved into matrix prop
+                props = omit(props, KEYS);
+                props.matrix = matrix;
+                // cache dynamic prop values since you need them to generate an accurate matrix
+                this.prevProps = Object.assign(this.prevProps, pick(props, KEYS));
+            }
+            this._component && this._component.setNativeProps(props);
         }
         render() {
-            // throws warning if transform props are objects
-            let { origin, scale, skew, translate, ...props } = this.props;
-            if (typeof origin === 'object') {
-                origin = origin.x + ', ' + origin.y;
-            }
-            if (typeof scale === 'object') {
-                scale = scale.x + ', ' + scale.y;
-            }
-            if (typeof skew === 'object') {
-                skew = skew.x + ', ' + skew.y;
-            }
-            if (typeof translate === 'object') {
-                translate = translate.x + ', ' + translate.y;
-            }
             return (
                 <WrappedComponent
                     ref={component => (this._component = component)}
-                    {...props}
-                    origin={origin}
-                    scale={scale}
-                    skew={skew}
-                    translate={translate}
+                    {...this.props}
                 />
             );
         }
