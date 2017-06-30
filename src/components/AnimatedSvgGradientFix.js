@@ -15,41 +15,42 @@ function clamp(value) {
 
 export default function SvgGradientFix(WrappedComponent) {
     return class extends Component {
-        listeners = []
+        constructor(props) {
+            super(props);
+            this.listeners = [];
+            this.state = this.getStateForChildren(this.props);
+        }
         getStateForChildren = (props) => {
             let newState = {};
             React.Children.forEach(props.children, (child, index) => {
                 childPropKeys.forEach((key) => {
                     const prop = child.props[key];
-                    if (prop != null) {
-                        if (prop instanceof Animated.Value) {
-                            if (key === 'offset') {
-                                this.listeners.push(
-                                    prop.addListener((e) => {
-                                        this.setState({ ['child' + index + key]: clamp(e.value).toString() });
-                                    })
-                                );
-                            } else {
-                                this.listeners.push(
-                                    prop.addListener((e) => {
-                                        this.setState({ ['child' + index + key]: e.value.toString() });
-                                    })
-                                );
-                            }
-                        } else if (prop instanceof Animated.Interpolation) {
-                            this.listeners.push(
-                                prop._parent.addListener((e) => {
-                                    this.setState({ ['child' + index + key]: prop._interpolation(e.value).toString() });
-                                })
-                            );
-                        } else {
-                            newState['child' + index + key] = prop;
+                    const stateKey = 'child' + index + key;
+                    if (prop instanceof Animated.Value || prop instanceof Animated.Interpolation) {
+                        const addListener = prop._parent ? prop._parent.addListener.bind(prop._parent) : prop.addListener.bind(prop);
+                        const interpolator = prop._interpolation;
+                        const isClamp = key === 'offset';
+                        let value = prop.__getValue();
+                        value = isClamp ? clamp(value) : value;
+                        value = value.toString();
+                        newState[stateKey] = value;
+                        let callback = e => e;
+                        if (interpolator) {
+                            callback = _value => interpolator(_value);
                         }
+                        if (isClamp) {
+                            let prevCallback = callback;
+                            callback = _value => clamp(prevCallback(_value));
+                        }
+                        let prevCallback = callback;
+                        callback = e => this.setState({ [stateKey]: prevCallback(e.value).toString() });
+                        const listener = addListener(callback);
+                        this.listeners.push(listener);
+                    } else {
+                        newState[stateKey] = prop;
                     }
+
                 });
-                if (newState['child' + index + 'offset']) {
-                    newState['child' + index + 'offset'] = clamp(newState['child' + index + 'offset']).toString();
-                }
             });
             return newState;
         }
@@ -64,8 +65,8 @@ export default function SvgGradientFix(WrappedComponent) {
                     }
                 });
             });
+            this.listeners = [];
         }
-        state = this.getStateForChildren(this.props)
         componentWillReceiveProps(nextProps) {
             if (nextProps.children !== this.props.children) {
                 this.removeAllListeners(this.props.children);

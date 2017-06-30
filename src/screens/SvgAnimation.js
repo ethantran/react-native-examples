@@ -6,6 +6,7 @@ const Defs = NativeSvg.Defs;
 
 import randomcolor from '../randomcolor';
 import randomnumber from '../randomnumber';
+import randompolygons, { randompolygon } from '../randompolygons';
 import Svg from '../components/AnimatedSvg';
 import Circle from '../components/AnimatedSvgCircle';
 import Rect from '../components/AnimatedSvgRect';
@@ -13,7 +14,9 @@ import Ellipse from '../components/AnimatedSvgEllipse';
 import Line from '../components/AnimatedSvgLine';
 import Polygon from '../components/AnimatedSvgPolygon';
 import Polyline from '../components/AnimatedSvgPolyline';
-import Path from '../components/AnimatedSvgPath';
+import D3Path from '../components/AnimatedSvgD3Path';
+import D3InterpolatePath from '../components/AnimatedSvgD3InterpolatePath';
+import FlubberPath from '../components/AnimatedSvgFlubberPath';
 import Text from '../components/AnimatedSvgText';
 import TSpan from '../components/AnimatedSvgTSpan';
 import TextPath from '../components/AnimatedSvgTextPath';
@@ -22,8 +25,9 @@ import Use from '../components/AnimatedSvgUse';
 import LinearGradient from '../components/AnimatedSvgLinearGradient';
 import RadialGradient from '../components/AnimatedSvgRadialGradient';
 import Stop from '../components/AnimatedSvgStop';
+import D3PathCommand from '../components/D3PathCommand';
 
-const types = ['circle', 'rect', 'ellipse', 'line', 'polygon', 'polyline', 'path', 'text', 'tspan', 'textpath', 'g', 'use', 'lgrad', 'rgrad'];
+const types = ['circle', 'rect', 'ellipse', 'line', 'polygon', 'polyline', 'd3path', 'd3interpolatepath', 'flubberpath', 'text', 'tspan', 'textpath', 'g', 'use', 'lgrad', 'rgrad'];
 const transformAnimTypes = [
     'origin+rotation', 'originXY+rotation',
     'scale', 'scaleX', 'scaleY', 'scaleXY',
@@ -34,10 +38,12 @@ const transformAnimTypes = [
 const defaultAnimTypes = ['none', 'defaultProps'];
 const fillAnimTypes = ['fill', 'fillOpacity'];
 const strokeAnimTypes = ['stroke', 'strokeOpacity', 'strokeWidth'];
-const gradAnimTypes = [...defaultAnimTypes, 'offset', 'offset0', 'stopColor', 'stopColor0', 'stopOpacity', 'stopOpacity0', 'onlyStop'];
-const lineAnimTypes = [...defaultAnimTypes, ...transformAnimTypes, ...strokeAnimTypes];
-const shapeAnimTypes = [...lineAnimTypes, ...fillAnimTypes];
-const textAnimTypes = [...shapeAnimTypes, 'dx', 'dy', 'dx+dy', 'dxn', 'dyn', 'fontSize', 'startOffset'];
+const gradAnimTypes = ['offset', 'offset0', 'stopColor', 'stopColor0', 'stopOpacity', 'stopOpacity0', 'onlyStop'];
+const lineAnimTypes = [...transformAnimTypes, ...strokeAnimTypes];
+const shapeAnimTypes = [...fillAnimTypes, ...lineAnimTypes];
+const textAnimTypes = ['dx', 'dy', 'dx+dy', 'dxn', 'dyn', 'fontSize', ...shapeAnimTypes];
+const d3PathArgs = ['moveTo', 'lineTo', 'quadraticCurveTo', 'bezierCurveTo', 'arcTo', 'arc', 'rect'];
+const flubberArgs = ['toCircle', 'toRect', 'fromCircle', 'fromRect', 'separate', 'combine', 'interpolateAll'];
 const animTypes = {
     circle: shapeAnimTypes,
     rect: shapeAnimTypes,
@@ -46,9 +52,12 @@ const animTypes = {
     polygon: shapeAnimTypes,
     polyline: shapeAnimTypes,
     path: shapeAnimTypes,
+    d3path: [...d3PathArgs, 'all', ...shapeAnimTypes],
+    d3interpolatepath: shapeAnimTypes,
+    flubberpath: [...flubberArgs, ...shapeAnimTypes],
     text: textAnimTypes,
     tspan: textAnimTypes,
-    textpath: textAnimTypes,
+    textpath: ['startOffset', ...textAnimTypes],
     g: transformAnimTypes,
     use: transformAnimTypes,
     lgrad: gradAnimTypes,
@@ -70,6 +79,13 @@ export default class SvgAnimation extends Component {
     static defaultProps = {
         cx: Math.round(randomnumber(1, 100)),
         cy: Math.round(randomnumber(1, 100)),
+
+        cpx: Math.round(randomnumber(1, 100)),
+        cpy: Math.round(randomnumber(1, 100)),
+        cpx1: Math.round(randomnumber(1, 100)),
+        cpy1: Math.round(randomnumber(1, 100)),
+        cpx2: Math.round(randomnumber(1, 100)),
+        cpy2: Math.round(randomnumber(1, 100)),
 
         dx: Math.round(randomnumber(1, 100)),
         dy: Math.round(randomnumber(1, 100)),
@@ -93,6 +109,8 @@ export default class SvgAnimation extends Component {
         r: Math.round(randomnumber(1, 100)),
         rx: Math.round(randomnumber(1, 100)),
         ry: Math.round(randomnumber(1, 100)),
+
+        t: Math.random(),
 
         x: Math.round(randomnumber(1, 100)),
         x1: Math.round(randomnumber(1, 100)),
@@ -137,14 +155,17 @@ export default class SvgAnimation extends Component {
 
         inputStroke: 0,
         strokeOpacity: Math.random(),
-        strokeWidth: Math.round(randomnumber(1, 10)),
+        strokeWidth: Math.round(randomnumber(5, 15)),
 
         startOffset: Math.round(randomnumber(1, 100)),
+
+        startAngle: Math.round(randomnumber(1, 180)),
+        endAngle: Math.round(randomnumber(181, 360)),
     }
 
-    state = { type: '', animType: 'none' }
-
-    componentDidMount() {
+    constructor(props) {
+        super(props);
+        this.state = { type: '', animType: 'none' };
         const propKeys = Object.keys(SvgAnimation.defaultProps);
         propKeys.forEach(key => {
             const value = this.props[key];
@@ -169,6 +190,9 @@ export default class SvgAnimation extends Component {
                 startColor
             ]
         });
+    }
+
+    componentDidMount() {
         this.animate();
     }
 
@@ -179,6 +203,13 @@ export default class SvgAnimation extends Component {
         Animated.parallel([
             Animated.spring(this.cx, { toValue: Math.round(randomnumber(1, 100)) }),
             Animated.spring(this.cy, { toValue: Math.round(randomnumber(1, 100)) }),
+
+            Animated.spring(this.cpx, { toValue: Math.round(randomnumber(1, 100)) }),
+            Animated.spring(this.cpy, { toValue: Math.round(randomnumber(1, 100)) }),
+            Animated.spring(this.cpx1, { toValue: Math.round(randomnumber(1, 100)) }),
+            Animated.spring(this.cpy1, { toValue: Math.round(randomnumber(1, 100)) }),
+            Animated.spring(this.cpx2, { toValue: Math.round(randomnumber(1, 100)) }),
+            Animated.spring(this.cpy2, { toValue: Math.round(randomnumber(1, 100)) }),
 
             Animated.spring(this.dx, { toValue: Math.round(randomnumber(1, 100)) }),
             Animated.spring(this.dy, { toValue: Math.round(randomnumber(1, 100)) }),
@@ -200,9 +231,11 @@ export default class SvgAnimation extends Component {
             Animated.spring(this.px2, { toValue: Math.round(randomnumber(1, 100)) }),
             Animated.spring(this.py2, { toValue: Math.round(randomnumber(1, 100)) }),
 
-            Animated.spring(this.r, { toValue: Math.round(randomnumber(1, 100)) }),
+            Animated.spring(this.r, { toValue: Math.max(0, Math.round(randomnumber(1, 100))) }),
             Animated.spring(this.rx, { toValue: Math.round(randomnumber(1, 100)) }),
             Animated.spring(this.ry, { toValue: Math.round(randomnumber(1, 100)) }),
+
+            Animated.spring(this.t, { toValue: Math.random() }),
 
             Animated.spring(this.x, { toValue: Math.round(randomnumber(1, 100)) }),
             Animated.spring(this.x1, { toValue: Math.round(randomnumber(1, 100)) }),
@@ -257,7 +290,10 @@ export default class SvgAnimation extends Component {
 
             Animated.spring(this.inputStroke, { toValue: Math.random() }),
             Animated.spring(this.strokeOpacity, { toValue: Math.random() }),
-            Animated.spring(this.strokeWidth, { toValue: randomnumber(1, 10) }),
+            Animated.spring(this.strokeWidth, { toValue: randomnumber(5, 15) }),
+
+            Animated.spring(this.startAngle, { toValue: Math.round(randomnumber(1, 180)) }),
+            Animated.spring(this.endAngle, { toValue: Math.round(randomnumber(181, 360)) }),
         ]).start(() => this.animate());
     }
 
@@ -315,14 +351,14 @@ export default class SvgAnimation extends Component {
             return {
                 ...normalProps,
                 stroke: this.stroke,
-                strokeWidth: '3'
+                strokeWidth: SvgAnimation.defaultProps.strokeWidth,
             };
         }
         if (this.state.animType === 'strokeOpacity') {
             return {
                 ...normalProps,
                 stroke: randomcolor(),
-                strokeWidth: '3',
+                strokeWidth: SvgAnimation.defaultProps.strokeWidth,
                 strokeOpacity: this.strokeOpacity
             };
         }
@@ -444,7 +480,7 @@ export default class SvgAnimation extends Component {
             y1: SvgAnimation.defaultProps.y1,
             y2: SvgAnimation.defaultProps.y2,
             stroke: randomcolor(),
-            strokeWidth: '3'
+            strokeWidth: SvgAnimation.defaultProps.strokeWidth
         };
         let props = this.getProps(normalProps);
         return (
@@ -465,7 +501,7 @@ export default class SvgAnimation extends Component {
             points: '40,5 70,80 25,95',
             fill: randomcolor(),
             stroke: randomcolor(),
-            strokeWidth: '1'
+            strokeWidth: SvgAnimation.defaultProps.strokeWidth
         };
         let props = this.getProps(normalProps);
         if (this.state.animType === 'defaultProps') {
@@ -498,7 +534,7 @@ export default class SvgAnimation extends Component {
             points: '40,5 70,80 25,95',
             fill: 'none',
             stroke: randomcolor(),
-            strokeWidth: '3'
+            strokeWidth: SvgAnimation.defaultProps.strokeWidth
         };
         let props = this.getProps(normalProps);
         if (this.state.animType === 'defaultProps') {
@@ -523,17 +559,143 @@ export default class SvgAnimation extends Component {
         );
     }
 
-    renderPath() {
-        if (this.state.type !== 'path') {
+    renderD3Path() {
+        if (this.state.type !== 'd3path') {
+            return null;
+        }
+        const closePath = <D3PathCommand command="closePath" />;
+        const argList = ['x', 'y', 'cpx', 'cpy', 'cpx1', 'cpx2', 'cpy1', 'cpy2', 'x1', 'x2', 'y1', 'y2', 'radius', 'w', 'h'];
+        const regularProps = argList.reduce((acc, key) => {
+            acc[key] = randomnumber(1, 100);
+            return acc;
+        }, {
+            startAngle: randomnumber(1, 180),
+            endAngle: randomnumber(181, 360)
+        });
+        const regularCommands = {
+            moveTo: <D3PathCommand command="moveTo" {...regularProps}/>,
+            lineTo: <D3PathCommand command="lineTo" {...regularProps} />,
+            quadraticCurveTo: <D3PathCommand command="quadraticCurveTo" {...regularProps} />,
+            bezierCurveTo: <D3PathCommand command="bezierCurveTo" {...regularProps} />,
+            arcTo: <D3PathCommand command="arcTo" {...regularProps} />,
+            arc: <D3PathCommand command="arc" {...regularProps} />,
+            rect: <D3PathCommand command="rect" {...regularProps} />,
+        };
+        const animatedCommands = {
+            moveTo: <D3PathCommand command="moveTo" x={this.x} y={this.x} />,
+            lineTo: <D3PathCommand command="lineTo" x={this.x1} y={this.x1} />,
+            quadraticCurveTo: <D3PathCommand command="quadraticCurveTo" cpx={this.cx} cpy={this.cy} x={this.x2} y={this.x2} />,
+            bezierCurveTo: <D3PathCommand command="bezierCurveTo" cpx1={this.cpx1} cpy1={this.cpy1} cpx2={this.cpx2} cpy2={this.cpy2} x={this.x2} y={this.x2} />,
+            arcTo: <D3PathCommand command="arcTo" x1={this.dx} y1={this.dy} x2={this.dx0} y2={this.dx1} radius={this.r} />,
+            arc: <D3PathCommand command="arc" x={this.dx1} y={this.dy1} radius={this.r} startAngle={this.startAngle} endAngle={this.endAngle} />,
+            rect: <D3PathCommand command="rect" x={this.dx2} y={this.dy2} w={this.fx} h={this.fy} />,
+        };
+        const animatedCommand = animatedCommands[this.state.animType];
+        const normalProps = {
+            d: this.d,
+            stroke: randomcolor(),
+            strokeWidth: SvgAnimation.defaultProps.strokeWidth,
+            children: Object.keys(regularCommands).map(key => regularCommands[key])
+        };
+        let props = this.getProps(normalProps);
+        if (this.state.animType === 'defaultProps') {
+            props = normalProps;
+        } else if (this.state.animType === 'all') {
+            props = {
+                ...normalProps,
+                children: Object.keys(animatedCommands).map(key => animatedCommands[key])
+            };
+        } else if (animatedCommand === animatedCommands.moveTo) {
+            props = {
+                ...normalProps,
+                children: [animatedCommand, regularCommands.lineTo]
+            };
+        } else if (animatedCommand === animatedCommands.arc) {
+            props = {
+                ...normalProps,
+                children: [animatedCommand]
+            };
+        } else if (animatedCommand) {
+            props = {
+                ...normalProps,
+                children: [regularCommands.moveTo, animatedCommand]
+            };
+        }
+        return (
+            <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
+                <D3Path
+                    ref={ref => (this.path = ref)}
+                    {...props}
+                />
+            </Svg>
+        );
+    }
+
+    renderD3InterpolatePath() {
+        if (this.state.type !== 'd3interpolatepath') {
             return null;
         }
         const normalProps = {
-            d: this.d
+            stroke: randomcolor(),
+            strokeWidth: SvgAnimation.defaultProps.strokeWidth,
+            d1: 'm72.5,167.5c1,0 67,-36 151,2c84,38 166,-15 165.5,-15.5',
+            d2: 'm82.5,187.5c1,0 87,-86 181,2c88,88 186,-15 185.5,-85.5'
         };
         let props = this.getProps(normalProps);
+        if (this.state.animType === 'defaultProps') {
+            props = {
+                ...normalProps,
+                t: this.t
+            };
+        }
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
-                <Path
+                <D3InterpolatePath
+                    ref={ref => (this.path = ref)}
+                    {...props}
+                />
+            </Svg>
+        );
+    }
+
+    renderFlubberPath() {
+        if (this.state.type !== 'flubberpath') {
+            return null;
+        }
+        const numShapes = Math.round(randomnumber(3, 10));
+        const fromShape = randompolygon(SCREEN_WIDTH, SCREEN_HEIGHT);
+        const toShape = randompolygon(SCREEN_WIDTH, SCREEN_HEIGHT);
+        const fromShapeList = randompolygon(numShapes, SCREEN_WIDTH, SCREEN_HEIGHT);
+        const toShapeList = randompolygon(numShapes, SCREEN_WIDTH, SCREEN_HEIGHT);
+        const normalProps = {
+            stroke: randomcolor(),
+            strokeWidth: SvgAnimation.defaultProps.strokeWidth,
+            fromShape,
+            toShape,
+            fromShapeList,
+            toShapeList,
+            x: SvgAnimation.defaultProps.x,
+            y: SvgAnimation.defaultProps.y,
+            r: SvgAnimation.defaultProps.r,
+            width: SvgAnimation.defaultProps.width,
+            height: SvgAnimation.defaultProps.height,
+        };
+        let props = this.getProps(normalProps);
+        if (this.state.animType === 'defaultProps') {
+            props = {
+                ...normalProps,
+                t: this.t
+            };
+        } else if (flubberArgs.includes(this.state.animType)) {
+            props = {
+                ...normalProps,
+                t: this.t,
+                interpolatorType: this.state.animType
+            };
+        }
+        return (
+            <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
+                <FlubberPath
                     ref={ref => (this.path = ref)}
                     {...props}
                 />
@@ -788,10 +950,11 @@ export default class SvgAnimation extends Component {
     }
 
     render() {
-        const anims = animTypes[this.state.type] || [];
+        const animsForType = animTypes[this.state.type] || [];
+        const anims = [...defaultAnimTypes, ...animsForType];
         return (
             <View>
-                <ScrollView horizontal style={{ flexDirection: 'row', marginVertical: 40 }}>
+                <ScrollView horizontal style={{ flexDirection: 'row', marginTop: 40, paddingBottom: 20 }}>
                     {types.map((type, i) => (
                         <Button
                             key={i}
@@ -806,7 +969,7 @@ export default class SvgAnimation extends Component {
                         />
                     ))}
                 </ScrollView>
-                <ScrollView horizontal style={{ flexDirection: 'row', marginVertical: 40 }}>
+                <ScrollView horizontal style={{ flexDirection: 'row', paddingBottom: 20 }}>
                     {anims.map((animType, i) => (
                         <Button
                             key={i}
@@ -828,7 +991,8 @@ export default class SvgAnimation extends Component {
                     {this.renderLine()}
                     {this.renderPolygon()}
                     {this.renderPolyline()}
-                    {this.renderPath()}
+                    {this.renderD3Path()}
+                    {this.renderD3InterpolatePath()}
                     {this.renderText()}
                     {this.renderTextPath()}
                     {this.renderG()}

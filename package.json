@@ -6,6 +6,9 @@
   "private": true,
   "main": "main.js",
   "dependencies": {
+    "d3": "4.9.1",
+    "d3-interpolate-path": "1.1.1",
+    "d3-path": "1.0.5",
     "expo": "17.0.0",
     "lorem-ipsum-react-native": "1.0.3",
     "react": "16.0.0-alpha.6",
