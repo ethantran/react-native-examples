@@ -32,10 +32,21 @@ class SvgD3Path extends Component {
         this.listenToChildren(props);
     }
     setNativeProps = (props = {}) => {
-        if (props.useD3Path) {
+        if (props.updateD3Path) {
             props.d = this.createPathFromSteps();
         }
         this._component && this._component.setNativeProps(props);
+    }
+    // immutable update step arg value
+    updateStepValueForArg = (arg, value, index) => {
+        const oldStep = this.steps[index];
+        const newStep = {
+            ...oldStep,
+            [arg]: value
+        };
+        let newSteps = [...this.steps];
+        newSteps[index] = newStep;
+        return newSteps;
     }
     createPathFromSteps = () => {
         let path = d3.path();
@@ -45,47 +56,57 @@ class SvgD3Path extends Component {
         });
         return path.toString();
     }
+    addListenerForAnimatedArgProp = (arg, prop, index) => {
+        const addListener = prop._parent ? prop._parent.addListener.bind(prop._parent) : prop.addListener.bind(prop);
+        const interpolator = prop._interpolation;
+        let callback = e => e;
+        if (interpolator) {
+            callback = _value => interpolator(_value);
+        }
+        let prevCallback = callback;
+        callback = e => {
+            const value = prevCallback(e.value);
+            this.steps = this.updateStepValueForArg(arg, value, index);
+            this.setNativeProps({ updateD3Path: true });
+        };
+        return addListener(callback);
+    }
     listenToChildren = ({ children }) => {
         this.steps = [];
+        let stepIndex = 0;
         React.Children.forEach(children, (child, i) => {
-            this.steps[i] = {};
             if (child.type === D3PathCommand) {
-                this.steps[i].command = child.props.command;
-                D3Args[child.props.command].forEach((key) => {
-                    const prop = child.props[key];
+                let step = {};
+                step.command = child.props.command;
+                const args = D3Args[child.props.command];
+                args.forEach((arg) => {
+                    const prop = child.props[arg];
                     if (prop instanceof Animated.Value || prop instanceof Animated.Interpolation) {
-                        const addListener = prop._parent ? prop._parent.addListener.bind(prop._parent) : prop.addListener.bind(prop);
-                        const interpolator = prop._interpolation;
-                        // initial value
-                        this.steps[i][key] = prop.__getValue();
-                        let callback = e => e;
-                        if (interpolator) {
-                            callback = _value => interpolator(_value);
-                        }
-                        let prevCallback = callback;
-                        callback = e => {
-                            this.steps[i][key] = prevCallback(e.value);
-                            this.setNativeProps({ useD3Path: true });
-                        };
-                        const listener = addListener(callback);
+                        step[arg] = prop.__getValue();
+                        const listener = this.addListenerForAnimatedArgProp(prop, arg, stepIndex);
                         this.listeners.push(listener);
                     } else {
-                        this.steps[i][key] = prop;
+                        step[arg] = prop;
                     }
                 });
+                this.steps[stepIndex] = step;
+                stepIndex += 1;
             }
         });
     }
     removeAllListeners = ({ children }) => {
         React.Children.forEach(children, (child) => {
-            D3Args[child.props.command].forEach((key) => {
-                const prop = child.props[key];
-                if (prop instanceof Animated.Value) {
-                    this.listeners.forEach(listener => prop.removeListener(listener));
-                } else if (prop instanceof Animated.Interpolation) {
-                    this.listeners.forEach(listener => prop._parent.removeListener(listener));
-                }
-            });
+            if (child.type === D3PathCommand) {
+                const args = D3Args[child.props.command];
+                args.forEach((arg) => {
+                    const prop = child.props[arg];
+                    if (prop instanceof Animated.Value) {
+                        this.listeners.forEach(listener => prop.removeListener(listener));
+                    } else if (prop instanceof Animated.Interpolation) {
+                        this.listeners.forEach(listener => prop._parent.removeListener(listener));
+                    }
+                });
+            }
         });
         this.listeners = [];
     }
@@ -93,8 +114,7 @@ class SvgD3Path extends Component {
         if (nextProps.children !== this.props.children) {
             this.removeAllListeners(this.props);
             this.listenToChildren(nextProps);
-            const d = this.createPathFromSteps();
-            this.setNativeProps({ d });
+            this.setNativeProps({ updateD3Path: true });
         }
     }
     componentWillUnmount() {

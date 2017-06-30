@@ -26,6 +26,7 @@ import LinearGradient from '../components/AnimatedSvgLinearGradient';
 import RadialGradient from '../components/AnimatedSvgRadialGradient';
 import Stop from '../components/AnimatedSvgStop';
 import D3PathCommand from '../components/D3PathCommand';
+import StrokeDasharray from '../components/AnimatedSvgStrokeDasharray';
 
 const types = ['circle', 'rect', 'ellipse', 'line', 'polygon', 'polyline', 'd3path', 'd3interpolatepath', 'flubberpath', 'text', 'tspan', 'textpath', 'g', 'use', 'lgrad', 'rgrad'];
 const transformAnimTypes = [
@@ -37,7 +38,7 @@ const transformAnimTypes = [
 ];
 const defaultAnimTypes = ['none', 'defaultProps'];
 const fillAnimTypes = ['fill', 'fillOpacity'];
-const strokeAnimTypes = ['stroke', 'strokeOpacity', 'strokeWidth'];
+const strokeAnimTypes = ['stroke', 'strokeOpacity', 'strokeWidth', 'strokeDasharray', 'strokeDashoffset', 'strokeDasharray+strokeDashoffset', 'strokeMiterlimit'];
 const gradAnimTypes = ['offset', 'offset0', 'stopColor', 'stopColor0', 'stopOpacity', 'stopOpacity0', 'onlyStop'];
 const lineAnimTypes = [...transformAnimTypes, ...strokeAnimTypes];
 const shapeAnimTypes = [...fillAnimTypes, ...lineAnimTypes];
@@ -156,6 +157,11 @@ export default class SvgAnimation extends Component {
         inputStroke: 0,
         strokeOpacity: Math.random(),
         strokeWidth: Math.round(randomnumber(5, 15)),
+        strokeDasharray0: randomnumber(1, 15),
+        strokeDasharray1: randomnumber(1, 15),
+        strokeDasharray2: randomnumber(1, 15),
+        strokeDashoffset: randomnumber(1, 100),
+        strokeMiterlimit: randomnumber(1, 100),
 
         startOffset: Math.round(randomnumber(1, 100)),
 
@@ -291,6 +297,11 @@ export default class SvgAnimation extends Component {
             Animated.spring(this.inputStroke, { toValue: Math.random() }),
             Animated.spring(this.strokeOpacity, { toValue: Math.random() }),
             Animated.spring(this.strokeWidth, { toValue: randomnumber(5, 15) }),
+            Animated.spring(this.strokeDasharray0, { toValue: randomnumber(5, 15) }),
+            Animated.spring(this.strokeDasharray1, { toValue: randomnumber(5, 15) }),
+            Animated.spring(this.strokeDasharray2, { toValue: randomnumber(5, 15) }),
+            Animated.spring(this.strokeDashoffset, { toValue: randomnumber(5, 100) }),
+            Animated.spring(this.strokeMiterlimit, { toValue: randomnumber(5, 15) }),
 
             Animated.spring(this.startAngle, { toValue: Math.round(randomnumber(1, 180)) }),
             Animated.spring(this.endAngle, { toValue: Math.round(randomnumber(181, 360)) }),
@@ -401,6 +412,55 @@ export default class SvgAnimation extends Component {
                 dy0: this.dy0,
                 dy1: this.dy1,
                 dy2: this.dy2
+            };
+        }
+        if (this.state.animType === 'strokeDasharray') {
+            return {
+                ...normalProps,
+                stroke: randomcolor(),
+                strokeWidth: SvgAnimation.defaultProps.strokeWidth,
+                children: [
+                    ...(normalProps.children || []),
+                    <StrokeDasharray key="1" value={this.strokeDasharray0} />,
+                    <StrokeDasharray key="2" value={this.strokeDasharray1} />,
+                    <StrokeDasharray key="3" value={this.strokeDasharray2} />
+                ]
+            };
+        }
+        if (this.state.animType === 'strokeDashoffset') {
+            return {
+                ...normalProps,
+                stroke: randomcolor(),
+                strokeWidth: SvgAnimation.defaultProps.strokeWidth,
+                strokeDashoffset: this.strokeDashoffset,
+                children: [
+                    ...(normalProps.children || []),
+                    <StrokeDasharray value={randomnumber(1,15)} />,
+                    <StrokeDasharray value={randomnumber(1,15)} />,
+                    <StrokeDasharray value={randomnumber(1,15)} />
+                ]
+            };
+        }
+        if (this.state.animType === 'strokeDasharray+strokeDashoffset') {
+            return {
+                ...normalProps,
+                stroke: randomcolor(),
+                strokeWidth: SvgAnimation.defaultProps.strokeWidth,
+                strokeDashoffset: this.strokeDashoffset,
+                children: [
+                    ...(normalProps.children || []),
+                    <StrokeDasharray value={this.strokeDasharray0} />,
+                    <StrokeDasharray value={this.strokeDasharray1} />,
+                    <StrokeDasharray value={this.strokeDasharray2} />
+                ]
+            };
+        }
+        if (this.state.animType === 'strokeMiterlimit') {
+            return {
+                ...normalProps,
+                stroke: randomcolor(),
+                strokeWidth: SvgAnimation.defaultProps.strokeWidth,
+                strokeMiterlimit: this.strokeMiterlimit
             };
         }
         if (this.state.animType === 'defaultProps') {

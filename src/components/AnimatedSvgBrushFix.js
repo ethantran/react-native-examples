@@ -1,6 +1,9 @@
 import React, { Component } from 'react';
+import { Animated } from 'react-native';
 import Color from 'color';
 import pick from 'lodash/pick';
+
+import StrokeDasharray from './AnimatedSvgStrokeDasharray';
 
 /**
  * Problem: Color props such as fill and stroke cannot be animated through setNativeProps. They can be animated through state, but setNativeProps is better
@@ -53,13 +56,28 @@ function getPropList(nextProps, prevProps) {
     return propList;
 }
 
+function getStrokeDasharray(strokeDasharray) {
+    if (strokeDasharray && strokeDasharray.length === 1) {
+        strokeDasharray.push(strokeDasharray[0]);
+    }
+    return strokeDasharray;
+}
+
+function getStrokeDashoffset(nextProps, prevProps) {
+    const strokeDasharray = getStrokeDasharray(nextProps.strokeDasharray) || getStrokeDasharray(prevProps.strokeDasharray);
+    return strokeDasharray ? (+nextProps.strokeDashoffset || +prevProps.strokeDashoffset || 0) : null;
+}
+
 const KEYS = ['fill', 'stroke'];
 
 export default function SvgBrushFix(WrappedComponent) {
     return class extends Component {
         constructor(props) {
             super(props);
+            this.listeners = [];
+            this.strokeDasharray = [];
             this.updateCache(props);
+            this.listenToChildren(props);
         }
         updateCache(props) {
             this.prevProps = pick(props, KEYS);
@@ -72,16 +90,81 @@ export default function SvgBrushFix(WrappedComponent) {
             if (props.stroke) {
                 props.stroke = extractBrush(props.stroke);
             }
+            if (props.updateStrokeDasharray || props.strokeDashoffset) {
+                props.strokeDasharray = getStrokeDasharray(this.strokeDasharray);
+                props.strokeDashoffset = getStrokeDashoffset(props, this.prevProps);
+            }
             this._component && this._component.setNativeProps(props);
+        }
+        // immutable update 
+        updateStrokeDasharrayValueForIndex = (value, index) => {
+            let newStrokeDasharray = [...this.strokeDasharray];
+            newStrokeDasharray[index] = value;
+            return newStrokeDasharray;
+        }
+        addListenerForAnimatedStrokeDasharrayProp = (prop, index) => {
+            const addListener = prop._parent ? prop._parent.addListener.bind(prop._parent) : prop.addListener.bind(prop);
+            const interpolator = prop._interpolation;
+            let callback = e => e;
+            if (interpolator) {
+                callback = _value => interpolator(_value);
+            }
+            let prevCallback = callback;
+            callback = e => {
+                const value = prevCallback(e.value);
+                this.strokeDasharray = this.updateStrokeDasharrayValueForIndex(value, index);
+                this.setNativeProps({ updateStrokeDasharray: true });
+            };
+            return addListener(callback);
+        }
+        listenToChildren = ({ children }) => {
+            let strokeDasharray = [];
+            let strokeDasharrayIndex = 0;
+            React.Children.forEach(children, (child) => {
+                if (child.type === StrokeDasharray) {
+                    const prop = child.props.value;
+                    if (prop instanceof Animated.Value || prop instanceof Animated.Interpolation) {
+                        strokeDasharray[strokeDasharrayIndex] = prop.__getValue();
+                        const listener = this.addListenerForAnimatedStrokeDasharrayProp(prop, strokeDasharrayIndex);
+                        this.listeners.push(listener);
+                    } else {
+                        strokeDasharray[strokeDasharrayIndex] = prop;
+                    }
+                    strokeDasharrayIndex += 1;
+                }
+            });
+            this.strokeDasharray = strokeDasharray;
+        }
+        removeAllListeners = ({ children }) => {
+            React.Children.forEach(children, (child) => {
+                if (child.type === StrokeDasharray) {
+                    const prop = child.props.value;
+                    if (prop instanceof Animated.Value) {
+                        this.listeners.forEach(listener => prop.removeListener(listener));
+                    } else if (prop instanceof Animated.Interpolation) {
+                        this.listeners.forEach(listener => prop._parent.removeListener(listener));
+                    }
+                }
+            });
+            this.listeners = [];
         }
         componentWillReceiveProps(nextProps) {
             this.updateCache(nextProps);
+            if (nextProps.children !== this.props.children) {
+                this.removeAllListeners(this.props);
+                this.listenToChildren(nextProps);
+                this.setNativeProps({ updateStrokeDasharray: true });
+            }
+        }
+        componentWillUnmount() {
+            this.removeAllListeners(this.props);
         }
         render() {
             return (
                 <WrappedComponent
                     ref={component => (this._component = component)}
                     {...this.props}
+                    strokeDasharray={this.strokeDasharray}
                 />
             );
         }

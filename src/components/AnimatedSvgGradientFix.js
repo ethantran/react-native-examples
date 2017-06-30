@@ -20,6 +20,21 @@ export default function SvgGradientFix(WrappedComponent) {
             this.listeners = [];
             this.state = this.getStateForChildren(this.props);
         }
+        addListenerForStopProp = (prop, stateKey, isClamp) => {
+            const addListener = prop._parent ? prop._parent.addListener.bind(prop._parent) : prop.addListener.bind(prop);
+            const interpolator = prop._interpolation;
+            let callback = e => e;
+            if (interpolator) {
+                callback = _value => interpolator(_value);
+            }
+            if (isClamp) {
+                let prevCallback = callback;
+                callback = _value => clamp(prevCallback(_value));
+            }
+            let prevCallback = callback;
+            callback = e => this.setState({ [stateKey]: prevCallback(e.value).toString() });
+            return addListener(callback);
+        }
         getStateForChildren = (props) => {
             let newState = {};
             React.Children.forEach(props.children, (child, index) => {
@@ -27,29 +42,16 @@ export default function SvgGradientFix(WrappedComponent) {
                     const prop = child.props[key];
                     const stateKey = 'child' + index + key;
                     if (prop instanceof Animated.Value || prop instanceof Animated.Interpolation) {
-                        const addListener = prop._parent ? prop._parent.addListener.bind(prop._parent) : prop.addListener.bind(prop);
-                        const interpolator = prop._interpolation;
                         const isClamp = key === 'offset';
                         let value = prop.__getValue();
                         value = isClamp ? clamp(value) : value;
                         value = value.toString();
                         newState[stateKey] = value;
-                        let callback = e => e;
-                        if (interpolator) {
-                            callback = _value => interpolator(_value);
-                        }
-                        if (isClamp) {
-                            let prevCallback = callback;
-                            callback = _value => clamp(prevCallback(_value));
-                        }
-                        let prevCallback = callback;
-                        callback = e => this.setState({ [stateKey]: prevCallback(e.value).toString() });
-                        const listener = addListener(callback);
+                        const listener = this.addListenerForStopProp(prop, stateKey, isClamp);
                         this.listeners.push(listener);
                     } else {
                         newState[stateKey] = prop;
                     }
-
                 });
             });
             return newState;
