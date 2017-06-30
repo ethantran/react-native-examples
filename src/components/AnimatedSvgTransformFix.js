@@ -6,7 +6,7 @@ import Matrix2D from '../Matrix2D';
 /**
  * Problem: Animating transform props is not easy
  * Solution: Use Animated.ValueXY in universal props, create matrix when ever transform props change, use setNativeProps
- * BUG: Using Animated.ValueXY does not work because component throws error for wrong prop type (object)
+ * BUG: Using Animated.ValueXY does not work for some reason
  */
 
 // https://github.com/react-native-community/react-native-svg/blob/master/lib/extract/extractTransform.js

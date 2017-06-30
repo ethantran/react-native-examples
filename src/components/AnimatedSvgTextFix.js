@@ -12,6 +12,8 @@ import AnimatedSvgTransformFix from './AnimatedSvgTransformFix';
  * Problem: Animating dx and dy with a list of values is not possible, fontSize and startOffset do not animate
  * Solution: Combine props dx0, dx1, dx2, ..., dxn into deltaX array, use extractText, and use setNativeProps
  * BUG: startOffset not working not even with setState
+ * BUG: does not animate unless you have a fill or stroke
+ * TODO: alternative api for dxn and dyn. instead of props just send them as children <TextDelta x={} y={} />, use addListener and remove them in render
  */
 
 // https://github.com/react-native-community/react-native-svg/blob/master/lib/extract/extractText.js
@@ -108,7 +110,8 @@ const KEYS = [
     'startOffset',
     'fontSize', 'fontFamily', 'fontWeight', 'fontStyle',
     'positionX', 'positionY', 'x', 'y',
-    'content', 'children'
+    'content', 'children',
+    'deltaX', 'deltaY'
 ];
 
 export default function SvgTextFix(WrappedComponent, { container } = {}) {
@@ -116,6 +119,9 @@ export default function SvgTextFix(WrappedComponent, { container } = {}) {
     WrappedComponent = AnimatedSvgPropStringFix(WrappedComponent);
     WrappedComponent = AnimatedSvgTransformFix(WrappedComponent);
     class HOComponent extends Component {
+        static defaultProps = {
+            fill: '#000'
+        }
         constructor(props) {
             super(props);
             this.state = {};

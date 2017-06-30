@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, View, ScrollView, Animated, Dimensions, Button } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, Animated, Dimensions, Button } from 'react-native';
 import loremipsum from 'lorem-ipsum-react-native';
 import { Svg as NativeSvg } from 'expo';
 const Defs = NativeSvg.Defs;
@@ -17,7 +17,7 @@ import Polyline from '../components/AnimatedSvgPolyline';
 import D3Path from '../components/AnimatedSvgD3Path';
 import D3InterpolatePath from '../components/AnimatedSvgD3InterpolatePath';
 import FlubberPath from '../components/AnimatedSvgFlubberPath';
-import Text from '../components/AnimatedSvgText';
+import AnimatedSvgText from '../components/AnimatedSvgText';
 import TSpan from '../components/AnimatedSvgTSpan';
 import TextPath from '../components/AnimatedSvgTextPath';
 import G from '../components/AnimatedSvgG';
@@ -41,7 +41,7 @@ const strokeAnimTypes = ['stroke', 'strokeOpacity', 'strokeWidth'];
 const gradAnimTypes = ['offset', 'offset0', 'stopColor', 'stopColor0', 'stopOpacity', 'stopOpacity0', 'onlyStop'];
 const lineAnimTypes = [...transformAnimTypes, ...strokeAnimTypes];
 const shapeAnimTypes = [...fillAnimTypes, ...lineAnimTypes];
-const textAnimTypes = ['dx', 'dy', 'dx+dy', 'dxn', 'dyn', 'fontSize', ...shapeAnimTypes];
+const textAnimTypes = ['dx', 'dy', 'dx+dy', 'dxn', 'dyn', 'dxn+dyn', 'fontSize', ...shapeAnimTypes];
 const d3PathArgs = ['moveTo', 'lineTo', 'quadraticCurveTo', 'bezierCurveTo', 'arcTo', 'arc', 'rect'];
 const flubberArgs = ['toCircle', 'toRect', 'fromCircle', 'fromRect', 'separate', 'combine', 'interpolateAll'];
 const animTypes = {
@@ -56,8 +56,8 @@ const animTypes = {
     d3interpolatepath: shapeAnimTypes,
     flubberpath: [...flubberArgs, ...shapeAnimTypes],
     text: textAnimTypes,
-    tspan: textAnimTypes,
-    textpath: ['startOffset', ...textAnimTypes],
+    tspan: ['text+tspan', ...textAnimTypes],
+    textpath: ['startOffset', 'text+textpath+tspan', ...textAnimTypes],
     g: transformAnimTypes,
     use: transformAnimTypes,
     lgrad: gradAnimTypes,
@@ -372,8 +372,6 @@ export default class SvgAnimation extends Component {
         if (this.state.animType === 'dx+dy') {
             return {
                 ...normalProps,
-                fill: randomcolor(),
-                stroke: randomcolor(),
                 dx: this.dx,
                 dy: this.dy
             };
@@ -381,8 +379,6 @@ export default class SvgAnimation extends Component {
         if (this.state.animType === 'dxn') {
             return {
                 ...normalProps,
-                fill: randomcolor(),
-                stroke: randomcolor(),
                 dx0: this.dx0,
                 dx1: this.dx1,
                 dx2: this.dx2
@@ -391,8 +387,17 @@ export default class SvgAnimation extends Component {
         if (this.state.animType === 'dyn') {
             return {
                 ...normalProps,
-                fill: randomcolor(),
-                stroke: randomcolor(),
+                dy0: this.dy0,
+                dy1: this.dy1,
+                dy2: this.dy2
+            };
+        }
+        if (this.state.animType === 'dxn+dyn') {
+            return {
+                ...normalProps,
+                dx0: this.dx0,
+                dx1: this.dx1,
+                dx2: this.dx2,
                 dy0: this.dy0,
                 dy1: this.dy1,
                 dy2: this.dy2
@@ -422,10 +427,7 @@ export default class SvgAnimation extends Component {
         let props = this.getProps(normalProps);
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
-                <Circle
-                    ref={ref => (this.circle = ref)}
-                    {...props}
-                />
+                <Circle {...props} />
             </Svg>
         );
     }
@@ -441,10 +443,7 @@ export default class SvgAnimation extends Component {
         let props = this.getProps(normalProps);
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
-                <Rect
-                    ref={ref => (this.rect = ref)}
-                    {...props}
-                />
+                <Rect {...props} />
             </Svg>
         );
     }
@@ -462,10 +461,7 @@ export default class SvgAnimation extends Component {
         let props = this.getProps(normalProps);
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
-                <Ellipse
-                    ref={ref => (this.ellipse = ref)}
-                    {...props}
-                />
+                <Ellipse {...props} />
             </Svg>
         );
     }
@@ -485,10 +481,7 @@ export default class SvgAnimation extends Component {
         let props = this.getProps(normalProps);
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
-                <Line
-                    ref={ref => (this.line = ref)}
-                    {...props}
-                />
+                <Line {...props} />
             </Svg>
         );
     }
@@ -518,10 +511,7 @@ export default class SvgAnimation extends Component {
         }
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
-                <Polygon
-                    ref={ref => (this.polygon = ref)}
-                    {...props}
-                />
+                <Polygon {...props} />
             </Svg>
         );
     }
@@ -551,10 +541,7 @@ export default class SvgAnimation extends Component {
         }
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
-                <Polyline
-                    ref={ref => (this.polyline = ref)}
-                    {...props}
-                />
+                <Polyline {...props} />
             </Svg>
         );
     }
@@ -569,11 +556,11 @@ export default class SvgAnimation extends Component {
             acc[key] = randomnumber(1, 100);
             return acc;
         }, {
-            startAngle: randomnumber(1, 180),
-            endAngle: randomnumber(181, 360)
-        });
+                startAngle: randomnumber(1, 180),
+                endAngle: randomnumber(181, 360)
+            });
         const regularCommands = {
-            moveTo: <D3PathCommand command="moveTo" {...regularProps}/>,
+            moveTo: <D3PathCommand command="moveTo" {...regularProps} />,
             lineTo: <D3PathCommand command="lineTo" {...regularProps} />,
             quadraticCurveTo: <D3PathCommand command="quadraticCurveTo" {...regularProps} />,
             bezierCurveTo: <D3PathCommand command="bezierCurveTo" {...regularProps} />,
@@ -623,10 +610,7 @@ export default class SvgAnimation extends Component {
         }
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
-                <D3Path
-                    ref={ref => (this.path = ref)}
-                    {...props}
-                />
+                <D3Path {...props} />
             </Svg>
         );
     }
@@ -650,10 +634,7 @@ export default class SvgAnimation extends Component {
         }
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
-                <D3InterpolatePath
-                    ref={ref => (this.path = ref)}
-                    {...props}
-                />
+                <D3InterpolatePath {...props} />
             </Svg>
         );
     }
@@ -695,10 +676,7 @@ export default class SvgAnimation extends Component {
         }
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
-                <FlubberPath
-                    ref={ref => (this.path = ref)}
-                    {...props}
-                />
+                <FlubberPath {...props} />
             </Svg>
         );
     }
@@ -708,15 +686,14 @@ export default class SvgAnimation extends Component {
             return null;
         }
         const normalProps = {
-            fontSize: 40
+            fontSize: 40,
+            dx: randomnumber(1, 100),
+            dy: randomnumber(1, 100)
         };
         let props = this.getProps(normalProps);
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
-                <Text
-                    ref={ref => (this.text = ref)}
-                    {...props}
-                >abc</Text>
+                <AnimatedSvgText {...props}>abc</AnimatedSvgText>
             </Svg>
         );
     }
@@ -725,77 +702,107 @@ export default class SvgAnimation extends Component {
         if (this.state.type !== 'tspan') {
             return null;
         }
+        const textProps = {
+            fontSize: 10
+        };
+        const normalProps = {
+            fontSize: 10,
+            dx: randomnumber(1, 100),
+            dy: randomnumber(1, 100)
+        };
+        let props = this.getProps(normalProps);
+        let renderthis = (
+            <AnimatedSvgText {...textProps}>
+                <TSpan {...props}>abc</TSpan>
+            </AnimatedSvgText>
+        );
+        if (this.state.animType === 'text+tspan') {
+            renderthis = (
+                <AnimatedSvgText {...textProps} dx={this.x} dy={this.y} fill={this.fill} stroke={this.stroke}>
+                    Level0
+                    <TSpan {...normalProps} dx={this.x0} dy={this.y0} fill={this.fill} stroke={this.stroke}>
+                        Level1_0
+                    </TSpan>
+                    <TSpan {...normalProps} dx={this.x1} dy={this.y1} fill={this.fill} stroke={this.stroke}>
+                        Level1_1
+                    </TSpan>
+                    <TSpan {...normalProps} dx={this.x2} dy={this.y2} fill={this.fill} stroke={this.stroke}>
+                        Level1_2
+                        <TSpan {...normalProps} dx={this.dx0} dy={this.dx0} fill={this.fill} stroke={this.stroke}>
+                            Level2_0
+                        </TSpan>
+                        <TSpan {...normalProps} dx={this.dx1} dy={this.dy1} fill={this.fill} stroke={this.stroke}>
+                            Level2_1
+                        </TSpan>
+                    </TSpan>
+                </AnimatedSvgText>
+            );
+        }
         return (
-            <Svg
-                height="160"
-                width="200"
-            >
-                <Text y="20" dx="5 5">
-                    <NativeSvg.TSpan x="10" >tspan line 1</NativeSvg.TSpan>
-                    <NativeSvg.TSpan x="10" dy="15">tspan line 2</NativeSvg.TSpan>
-                    <NativeSvg.TSpan x="10" dx="10" dy="15">tspan line 3</NativeSvg.TSpan>
-                </Text>
-                <Text x="10" y="60" fill="red" fontSize="14">
-                    <NativeSvg.TSpan dy="5 10 20" >12345</NativeSvg.TSpan>
-                    <NativeSvg.TSpan fill="blue" dy="15" dx="0 5 5">
-                        <NativeSvg.TSpan>6</NativeSvg.TSpan>
-                        <NativeSvg.TSpan>7</NativeSvg.TSpan>
-                    </NativeSvg.TSpan>
-                    <NativeSvg.TSpan dx="0 10 20" dy="0 20" fontWeight="bold" fontSize="12">89a</NativeSvg.TSpan>
-                </Text>
-                <Text y="140" dx="0 5 5" dy="0 -5 -5">delta on text</Text>
+            <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
+                {renderthis}
             </Svg>
         );
-        // return (
-        //     <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
-        //         <Text y="20" dx="5 5">
-        //             <TSpan x={this.x} >tspan line 1</TSpan>
-        //             <TSpan x={this.x1} dy={this.y1}>tspan line 2</TSpan>
-        //             <TSpan x={this.x2} dx={this.y2} dy={this.cx}>tspan line 3</TSpan>
-        //         </Text>
-        //         <Text x="10" y="60" fill={this.fill} fontSize={this.fontSize}>
-        //             <TSpan dy={this.cy}>12345</TSpan>
-        //             <TSpan fill={this.stroke} dx={this.dx} dy={this.dy}>
-        //                 <TSpan>6</TSpan>
-        //                 <TSpan>7</TSpan>
-        //             </TSpan>
-        //             <TSpan dx="0 10 20" dy="0 20" fontWeight="bold" fontSize={this.fontSize}>89a</TSpan>
-        //         </Text>
-        //         <Text y="140" dx="0 5 5" dy="0 -5 -5">delta on text</Text>
-        //     </Svg>
-        // );
     }
 
     renderTextPath() {
         if (this.state.type !== 'textpath') {
             return null;
         }
+        const textProps = {
+            fontSize: 10
+        };
         const normalProps = {
             startOffset: SvgAnimation.defaultProps.startOffset
         };
         let props = this.getProps(normalProps);
+        let renderthis = (
+            <NativeSvg.Text fill="blue">
+                <TextPath href="#path" {...props}>
+                    {loremipsum({ count: 5, units: 'words' })}
+                    <NativeSvg.TSpan fill="red" dy="5,5,5">{loremipsum({ count: 5, units: 'words' })}</NativeSvg.TSpan>
+                </TextPath>
+            </NativeSvg.Text>
+        );
+        if (this.state.animType === 'text+textpath+tspan') {
+            renderthis = (
+                <AnimatedSvgText {...textProps} dx={this.x} dy={this.y} fill={this.fill} stroke={this.stroke}>
+                    <TextPath href="#path" {...props}>
+                        Level0
+                        <TSpan {...textProps} dx={this.x0} dy={this.y0} fill={this.fill} stroke={this.stroke}>
+                            Level1_0
+                        </TSpan>
+                        <TSpan {...textProps} dx={this.x1} dy={this.y1} fill={this.fill} stroke={this.stroke}>
+                            Level1_1
+                        </TSpan>
+                        <TSpan {...textProps} dx={this.x2} dy={this.y2} fill={this.fill} stroke={this.stroke}>
+                            Level1_2
+                            <TSpan {...textProps} dx={this.dx0} dy={this.dx0} fill={this.fill} stroke={this.stroke}>
+                                Level2_0
+                            </TSpan>
+                            <TSpan {...textProps} dx={this.dx1} dy={this.dy1} fill={this.fill} stroke={this.stroke}>
+                                Level2_1
+                            </TSpan>
+                        </TSpan>
+                    </TextPath>
+                </AnimatedSvgText>
+            );
+        }
         return (
             <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
                 <Defs>
-                    <Path
+                    <NativeSvg.Path
                         id="path"
                         d={this.d}
                     />
                 </Defs>
-                <G y="20">
-                    <Text fill="blue">
-                        <TextPath href="#path" {...props}>
-                            {loremipsum({ count: 5, units: 'words' })}
-                            <NativeSvg.TSpan fill="red" dy="5,5,5">{loremipsum({ count: 5, units: 'words' })}</NativeSvg.TSpan>
-                        </TextPath>
-                    </Text>
-                    <Path
-                        d={this.d}
-                        fill="none"
-                        stroke="red"
-                        strokeWidth="1"
-                    />
-                </G>
+                {renderthis}
+                <NativeSvg.Path
+                    d={this.d}
+                    fill="none"
+                    stroke="red"
+                    strokeWidth="1"
+                />
             </Svg>
         );
     }
@@ -984,6 +991,7 @@ export default class SvgAnimation extends Component {
                         />
                     ))}
                 </ScrollView>
+                <Text>{this.state.type} {this.state.animType}</Text>
                 <ScrollView style={styles.container}>
                     {this.renderCircle()}
                     {this.renderRect()}
@@ -994,6 +1002,7 @@ export default class SvgAnimation extends Component {
                     {this.renderD3Path()}
                     {this.renderD3InterpolatePath()}
                     {this.renderText()}
+                    {this.renderTSpan()}
                     {this.renderTextPath()}
                     {this.renderG()}
                     {this.renderUse()}

@@ -2,10 +2,6 @@ import React, { Component } from 'react';
 import { Svg } from 'expo';
 import AnimatedSvgTextFix from './AnimatedSvgTextFix';
 
-/**
- * BUG: does not even render anything
- */
-
 const NativeSvgTSpan = Svg.TSpan;
 
 class SvgTSpan extends Component {
