@@ -118,8 +118,6 @@ function createDefaultProps() {
         y2: Math.round(randomNumber(1, 100)),
 
         offset: Math.random(),
-        offset0: Math.max(0.49, Math.random()),
-        offset1: Math.min(0.51, Math.random()),
 
         inputStopColor: 0,
         stopOpacity: Math.random(),
@@ -298,9 +296,9 @@ export default class SvgAnimation extends Component {
                 fy: SvgAnimation.defaultProps.fy,
             },
             stop: {
-                offset: SvgAnimation.defaultProps.offset0,
+                offset: SvgAnimation.defaultProps.offset,
                 stopColor: randomColor(),
-                stopOpacity: SvgAnimation.defaultProps.fillOpacity
+                stopOpacity: SvgAnimation.defaultProps.stopOpacity
             },
             g: {
                 origin: SvgAnimation.defaultProps.origin,
@@ -435,11 +433,6 @@ export default class SvgAnimation extends Component {
             },
             flubberpath: {
                 t: this.t
-            },
-            stop: {
-                offset: this.offset0,
-                stopColor: this.fill,
-                stopOpacity: this.stroke
             }
         };
         let animPropsForAnimType = {
@@ -594,8 +587,9 @@ export default class SvgAnimation extends Component {
             Animated.spring(this.width, { toValue: Math.round(randomNumber(1, 100)) }),
             Animated.spring(this.height, { toValue: Math.round(randomNumber(1, 100)) }),
 
-            Animated.spring(this.offset0, { toValue: Math.max(0.49, Math.random()) }),
-            Animated.spring(this.offset1, { toValue: Math.min(0.51, Math.random()) }),
+            Animated.spring(this.offset, { toValue: Math.random() }),
+            Animated.spring(this.inputStopColor, { toValue: Math.random() }),
+            Animated.spring(this.stopOpacity, { toValue: Math.random() }),
 
             Animated.spring(this.origin, { toValue: Math.round(randomNumber(1, 100)) }),
             Animated.spring(this.originX, { toValue: Math.round(randomNumber(1, 100)) }),
@@ -926,7 +920,7 @@ export default class SvgAnimation extends Component {
         const stopProps = mergeProps(stopNormalProps, stopAnimProps);
         return (
             <LinearGradient id="grad" {...props}>
-                <Stop {...stopNormalProps} />
+                <Stop offset={Math.random()} stopColor={randomColor()} stopOpacity={Math.random()}/>
                 <Stop {...stopProps} />
             </LinearGradient>
         );
@@ -944,7 +938,7 @@ export default class SvgAnimation extends Component {
         const stopProps = mergeProps(stopNormalProps, stopAnimProps);
         return (
             <RadialGradient id="grad" {...props} gradientUnits="userSpaceOnUse">
-                <Stop {...stopNormalProps} />
+                <Stop offset={Math.random()} stopColor={randomColor()} stopOpacity={Math.random()}/>
                 <Stop {...stopProps} />
             </RadialGradient>
         );

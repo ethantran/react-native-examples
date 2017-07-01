@@ -80,7 +80,7 @@ export default function SvgGradientFix(WrappedComponent) {
         }
         replaceChild = (child, index) => {
             const props = childPropKeys.reduce((acc, key) => {
-                acc[key] = this.state['child' + index + key];
+                acc[key] = this.state['child' + index + key].toString();
                 return acc;
             }, {});
             return (
