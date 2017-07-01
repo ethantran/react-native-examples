@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
 import { StyleSheet, View, Image, Dimensions, Animated } from 'react-native';
 
-import randomImage from '../randomImage'
-import randomArrayElement from '../randomArrayElement'
-import AnimatedBlurView from '../components/AnimatedBlurView'
+import randomImage from '../randomImage';
+import randomArrayElement from '../randomArrayElement';
+import AnimatedBlurView from '../components/AnimatedBlurView';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const source = { uri: randomImage() }
+const source = { uri: randomImage() };
 
 const styles = StyleSheet.create({
     container: {
@@ -17,7 +17,7 @@ const styles = StyleSheet.create({
     }
 });
 
-const tints = ["light", "default", "dark"];
+const tints = ['light', 'default', 'dark'];
 
 export default class PixelBlurAnimation extends Component {
     static defaultProps = {
@@ -30,15 +30,15 @@ export default class PixelBlurAnimation extends Component {
         values: Array(this.numBoxes).fill().map(_ => new Animated.Value(0))
     }
     componentDidMount() {
-        this.animate()
+        this.animate();
     }
     animate = () => {
         Animated.parallel(this.state.values.map(value => {
             return Animated.timing(value, {
                 toValue: Math.round(100 * Math.random()),
                 duration: 500
-            })
-        })).start(this.animate)
+            });
+        })).start(this.animate);
     }
     render() {
         return (
@@ -54,7 +54,7 @@ export default class PixelBlurAnimation extends Component {
                                 width: this.size,
                                 height: this.size
                             }} />
-                    )
+                    );
                 })}
             </View>
         );

@@ -1,3 +1,11 @@
+# react-native-examples
+UI examples from pttrns.com converted to React Native 
+
+<img src="https://user-images.githubusercontent.com/3276358/27260564-16fb9d14-53f5-11e7-9743-23e857faa1a3.jpg" width="200px"><img src="https://user-images.githubusercontent.com/3276358/27260565-170b399a-53f5-11e7-9e10-cf777869ffbb.jpg" width="200px"><img src="https://user-images.githubusercontent.com/3276358/27514756-7cea7852-5959-11e7-9ae5-3fdd871a9c95.jpg" width="200px">
+
+Preview the app through the Expo mobile app 
+https://exp.host/@ethantran2/react-native-examples
+
 This project was bootstrapped with [Create React Native App](https://github.com/react-community/create-react-native-app).
 
 Below you'll find information about performing common tasks. The most recent version of this guide is available [here](https://github.com/react-community/create-react-native-app/blob/master/react-native-scripts/template/README.md).
@@ -218,3 +226,4 @@ There are a few steps you may want to take to troubleshoot these kinds of errors
 If you're not able to scan the QR code, make sure your phone's camera is focusing correctly, and also make sure that the contrast on the two colors in your terminal is high enough. For example, WebStorm's default themes may [not have enough contrast](https://github.com/react-community/create-react-native-app/issues/49) for terminal QR codes to be scannable with the system barcode scanners that the Expo app uses.
 
 If this causes problems for you, you may want to try changing your terminal's color theme to have more contrast, or running Create React Native App from a different terminal. You can also manually enter the URL printed by the packager script in the Expo app's search bar to load it manually.
+

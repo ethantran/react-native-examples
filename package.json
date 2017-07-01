@@ -1,5 +1,7 @@
 {
   "name": "react-native-examples",
+  "description": "UI, Animations, SVG, Flubber, D3",
+  "author": "Ethan Tran (ethan@joinronin.com)",
   "version": "0.1.0",
   "private": true,
   "devDependencies": {

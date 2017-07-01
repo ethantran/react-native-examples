@@ -7,7 +7,6 @@ import AnimatedSvgFix from './AnimatedSvgFix';
 /**
  * Problem: What is the best way to animate a path with animated.value?
  * Solution: This demonstrates how you can do it with flubber
- * BUG: separate
  */
 
 const NativeSvgPath = Svg.Path;
