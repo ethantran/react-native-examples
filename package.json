@@ -1,0 +1,39 @@
+{
+  "name": "react-native-examples",
+  "version": "0.1.0",
+  "private": true,
+  "devDependencies": {
+    "babel-eslint": "7.2.3",
+    "babel-plugin-add-module-exports": "0.2.1",
+    "eslint-config-fb-strict": "20.0.3",
+    "eslint-config-fbjs": "1.1.1",
+    "eslint-plugin-babel": "4.1.1",
+    "eslint-plugin-flowtype": "2.34.0",
+    "eslint-plugin-react": "7.1.0",
+    "jest-expo": "~18.0.0",
+    "react-native-scripts": "0.0.40",
+    "react-test-renderer": "16.0.0-alpha.12"
+  },
+  "main": "./node_modules/react-native-scripts/build/bin/crna-entry.js",
+  "scripts": {
+    "start": "react-native-scripts start",
+    "eject": "react-native-scripts eject",
+    "android": "react-native-scripts android",
+    "ios": "react-native-scripts ios",
+    "test": "node node_modules/jest/bin/jest.js --watch"
+  },
+  "jest": {
+    "preset": "jest-expo"
+  },
+  "dependencies": {
+    "d3": "4.9.1",
+    "d3-interpolate-path": "1.1.1",
+    "d3-path": "1.0.5",
+    "expo": "^17.0.0",
+    "flubber": "0.3.0",
+    "lorem-ipsum-react-native": "1.0.3",
+    "react": "16.0.0-alpha.12",
+    "react-native": "^0.45.1",
+    "react-navigation": "1.0.0-beta.11"
+  }
+}
