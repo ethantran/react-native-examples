@@ -13,6 +13,10 @@ https://medium.com/@ethantran/animating-svg-in-react-native-cf1907831608
 
 TODO:
 D3Shape
+D3Cord
+D3Interpolate
+D3Hierarchy
+svg-path-properties
 
 This project was bootstrapped with [Create React Native App](https://github.com/react-community/create-react-native-app).
 
