@@ -4,5 +4,8 @@
     "development": {
       "plugins": ["transform-react-jsx-source"]
     }
-  }
+  },
+  "ignore": [
+    "node_modules/flubber"
+  ]
 }
