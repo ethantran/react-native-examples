@@ -7,8 +7,8 @@ const Defs = NativeSvg.Defs;
 import randomColor from '../randomColor';
 import randomNumber from '../randomNumber';
 import randomPolygons, { randomPolygon } from '../randomPolygons';
-import { d as SnapchatIconSvgPathData } from '../components/SnapchatIconSvgPath';
-import { d as TwitterIconSvgPathData } from '../components/TwitterIconSvgPath';
+import { d as GithubIconSvgPath } from '../components/GithubIconSvgPath';
+import { d as TwitterIconSvgPath } from '../components/TwitterIconSvgPath';
 import Svg from '../components/AnimatedSvg';
 import Circle from '../components/AnimatedSvgCircle';
 import Rect from '../components/AnimatedSvgRect';
@@ -46,7 +46,7 @@ const lineAnimTypes = [...transformAnimTypes, ...strokeAnimTypes];
 const shapeAnimTypes = [...fillAnimTypes, ...lineAnimTypes];
 const textAnimTypes = ['dx', 'dy', 'dx+dy', 'dxn', 'dyn', 'dxn+dyn', 'fontSize', ...shapeAnimTypes];
 const d3PathArgs = ['moveTo', 'lineTo', 'quadraticCurveTo', 'bezierCurveTo', 'arcTo', 'arc', 'rect'];
-const flubberArgs = ['toCircle', 'toRect', 'fromCircle', 'fromRect', 'separate', 'combine', 'interpolateAll'];
+const flubberArgs = ['interpolate', 'toCircle', 'toRect', 'fromCircle', 'fromRect', 'separate', 'combine', 'interpolateAll'];
 const animTypes = {
     circle: shapeAnimTypes,
     rect: shapeAnimTypes,
@@ -72,8 +72,6 @@ const styles = StyleSheet.create({
         marginTop: 40
     }
 });
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 function createDefaultProps() {
     return {
@@ -345,10 +343,10 @@ export default class SvgAnimation extends Component {
         normalPropsForType.flubberpath = {
             stroke: randomColor(),
             strokeWidth: 1,
-            fromShape: TwitterIconSvgPathData,
-            toShape: SnapchatIconSvgPathData,
-            fromShapeList: randomPolygons(numShapes, SCREEN_WIDTH, SCREEN_HEIGHT),
-            toShapeList: randomPolygons(numShapes, SCREEN_WIDTH, SCREEN_HEIGHT),
+            fromShape: GithubIconSvgPath,
+            toShape: TwitterIconSvgPath,
+            fromShapeList: randomPolygons(numShapes, Dimensions.get('window').width, Dimensions.get('window').height),
+            toShapeList: randomPolygons(numShapes, Dimensions.get('window').width, Dimensions.get('window').height),
             x: SvgAnimation.defaultProps.x,
             y: SvgAnimation.defaultProps.y,
             r: SvgAnimation.defaultProps.r,
@@ -1011,7 +1009,7 @@ export default class SvgAnimation extends Component {
                 />
                 <Text>{type} {animType}</Text>
                 <ScrollView style={styles.container}>
-                    <Svg height={SCREEN_HEIGHT} width={SCREEN_WIDTH}>
+                    <Svg height={Dimensions.get('window').height} width={Dimensions.get('window').width}>
                         <Defs>
                             <NativeSvg.Path
                                 id="path"

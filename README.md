@@ -6,6 +6,12 @@ UI examples from pttrns.com converted to React Native
 Preview the app through the Expo mobile app 
 https://exp.host/@ethantran2/react-native-examples
 
+Medium posts about repo
+https://medium.com/@ethantran/animating-svg-in-react-native-cf1907831608
+
+TODO:
+D3Shape
+
 This project was bootstrapped with [Create React Native App](https://github.com/react-community/create-react-native-app).
 
 Below you'll find information about performing common tasks. The most recent version of this guide is available [here](https://github.com/react-community/create-react-native-app/blob/master/react-native-scripts/template/README.md).
