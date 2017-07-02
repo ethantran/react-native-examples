@@ -46,10 +46,6 @@ class SvgFlubberPath extends Component {
     setNativeProps = (props) => {
         if (props.t) {
             if (Array.isArray(this.interpolator)) {
-                this._components.forEach((component, i) => {
-                    props.d = this.interpolator[i](props.t);
-                    component && component.setNativeProps(props);
-                });
                 return;
             } else {
                 props.d = this.interpolator(props.t);
@@ -64,13 +60,11 @@ class SvgFlubberPath extends Component {
             return (
                 <Svg.G>
                     {this.interpolator.map((interpolator, i) => {
-                        const d = interpolator(t);
                         return (
-                            <NativeSvgPath
-                                ref={component => (this._components[i] = component)}
+                            <SvgFlubberPath
                                 key={i}
                                 {...rest}
-                                d={d}
+                                interpolator={interpolator}
                             />
                         );
                     })}
@@ -87,7 +81,7 @@ class SvgFlubberPath extends Component {
         );
     }
     componentWillReceiveProps(nextProps) {
-        if (nextProps.interpolatorType !== this.props.interpolatorType) {
+        if ((nextProps.interpolatorType !== this.props.interpolatorType) || (nextProps.interpolator !== this.props.interpolator)) {
             this.interpolator = createInterpolator(nextProps);
             this.cachedRender = this.createRender(nextProps);
         }
