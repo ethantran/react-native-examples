@@ -68,7 +68,7 @@ function getStrokeDashoffset(nextProps, prevProps) {
     return strokeDasharray ? (+nextProps.strokeDashoffset || +prevProps.strokeDashoffset || 0) : null;
 }
 
-const KEYS = ['fill', 'stroke'];
+const KEYS = ['fill', 'stroke', 'strokeDashoffset'];
 
 export default function SvgBrushFix(WrappedComponent) {
     return class extends Component {

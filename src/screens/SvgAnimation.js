@@ -7,6 +7,8 @@ const Defs = NativeSvg.Defs;
 import randomColor from '../randomColor';
 import randomNumber from '../randomNumber';
 import randomPolygons, { randomPolygon } from '../randomPolygons';
+import { d as SnapchatIconSvgPathData } from '../components/SnapchatIconSvgPath';
+import { d as TwitterIconSvgPathData } from '../components/TwitterIconSvgPath';
 import Svg from '../components/AnimatedSvg';
 import Circle from '../components/AnimatedSvgCircle';
 import Rect from '../components/AnimatedSvgRect';
@@ -108,7 +110,7 @@ function createDefaultProps() {
         rx: Math.round(randomNumber(1, 100)),
         ry: Math.round(randomNumber(1, 100)),
 
-        t: Math.random(),
+        t: 0,
 
         x: Math.round(randomNumber(1, 100)),
         x1: Math.round(randomNumber(1, 100)),
@@ -342,9 +344,9 @@ export default class SvgAnimation extends Component {
         const numShapes = Math.round(randomNumber(3, 10));
         normalPropsForType.flubberpath = {
             stroke: randomColor(),
-            strokeWidth: SvgAnimation.defaultProps.strokeWidth,
-            fromShape: randomPolygon(SCREEN_WIDTH, SCREEN_HEIGHT),
-            toShape: randomPolygon(SCREEN_WIDTH, SCREEN_HEIGHT),
+            strokeWidth: 1,
+            fromShape: TwitterIconSvgPathData,
+            toShape: SnapchatIconSvgPathData,
             fromShapeList: randomPolygons(numShapes, SCREEN_WIDTH, SCREEN_HEIGHT),
             toShapeList: randomPolygons(numShapes, SCREEN_WIDTH, SCREEN_HEIGHT),
             x: SvgAnimation.defaultProps.x,
@@ -388,7 +390,8 @@ export default class SvgAnimation extends Component {
         };
         flubberArgs.forEach((arg) => {
             normalPropsForAnimType[arg] = {
-                interpolatorType: arg
+                interpolatorType: arg,
+                options: { maxSegmentLength: 1 }
             };
         });
         normalPropsForAnimType.separate = {
@@ -571,7 +574,7 @@ export default class SvgAnimation extends Component {
             Animated.spring(this.rx, { toValue: Math.round(randomNumber(1, 100)) }),
             Animated.spring(this.ry, { toValue: Math.round(randomNumber(1, 100)) }),
 
-            Animated.spring(this.t, { toValue: Math.random() }),
+            Animated.timing(this.t, { toValue: this.t.__getValue() < 0.5 ? 1 : 0, duration: 1500 }),
 
             Animated.spring(this.x, { toValue: Math.round(randomNumber(1, 100)) }),
             Animated.spring(this.x1, { toValue: Math.round(randomNumber(1, 100)) }),
@@ -749,7 +752,11 @@ export default class SvgAnimation extends Component {
         }
         const normalProps = this.getNormalProps({ type, animType });
         const animProps = this.getAnimProps({ type, animType });
-        const props = mergeProps(normalProps, animProps);
+        let props = mergeProps(normalProps, animProps);
+        // need only animchildren if not 'none'
+        if (animType !== 'none') {
+            props.children = animProps.children;
+        }
         return <D3Path {...props} />;
     }
 
@@ -920,7 +927,7 @@ export default class SvgAnimation extends Component {
         const stopProps = mergeProps(stopNormalProps, stopAnimProps);
         return (
             <LinearGradient id="grad" {...props}>
-                <Stop offset={Math.random()} stopColor={randomColor()} stopOpacity={Math.random()}/>
+                <Stop offset={Math.random()} stopColor={randomColor()} stopOpacity={Math.random()} />
                 <Stop {...stopProps} />
             </LinearGradient>
         );
@@ -938,7 +945,7 @@ export default class SvgAnimation extends Component {
         const stopProps = mergeProps(stopNormalProps, stopAnimProps);
         return (
             <RadialGradient id="grad" {...props} gradientUnits="userSpaceOnUse">
-                <Stop offset={Math.random()} stopColor={randomColor()} stopOpacity={Math.random()}/>
+                <Stop offset={Math.random()} stopColor={randomColor()} stopOpacity={Math.random()} />
                 <Stop {...stopProps} />
             </RadialGradient>
         );
