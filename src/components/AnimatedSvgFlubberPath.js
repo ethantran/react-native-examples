@@ -11,7 +11,8 @@ import AnimatedSvgFix from './AnimatedSvgFix';
 
 const NativeSvgPath = Svg.Path;
 
-const flubberArgs = {
+export const flubberArgsForType = {
+    interpolate: ['fromShape', 'toShape', 'options'],
     toCircle: ['fromShape', 'x', 'y', 'r', 'options'],
     toRect: ['fromShape', 'x', 'y', 'width', 'height', 'options'],
     fromCircle: ['x', 'y', 'r', 'toShape', 'options'],
@@ -19,15 +20,13 @@ const flubberArgs = {
     separate: ['fromShape', 'toShapeList', 'options'],
     combine: ['fromShapeList', 'toShape', 'options'],
     interpolateAll: ['fromShapeList', 'toShapeList', 'options'],
-    interpolate: ['fromShape', 'toShape', 'options'],
 };
-const allFlubberArgs = ['fromShape', 'fromShapeList', 'toShape', 'toShapeList', 'x', 'y', 'r', 'width', 'height', 'options'];
 
 function createInterpolator(props) {
     if (props.interpolator) {
         return props.interpolator;
     }
-    const argsForType = flubberArgs[props.interpolatorType];
+    const argsForType = flubberArgsForType[props.interpolatorType];
     const args = argsForType.map(key => props[key]);
     return flubber[props.interpolatorType](...args);
 }
@@ -54,7 +53,7 @@ class SvgFlubberPath extends Component {
         this._component && this._component.setNativeProps(props);
     }
     createRender = (props) => {
-        const filteredProps = omit(props, allFlubberArgs);
+        const filteredProps = omit(props, flubberArgsForType[props.interpolatorType]);
         const { t, interpolatorType, children, ...rest } = filteredProps;  // eslint-disable-line no-unused-vars
         if (Array.isArray(this.interpolator)) {
             return (

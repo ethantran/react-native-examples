@@ -4,6 +4,8 @@ import AnimatedSvgFix from './AnimatedSvgFix';
 
 const NativeSvgRect = Svg.Rect;
 
+export const args = ['width', 'height'];
+
 class SvgRect extends Component {
     setNativeProps = (props) => {
         this._component && this._component.setNativeProps(props);
@@ -17,7 +19,5 @@ class SvgRect extends Component {
         );
     }
 }
-SvgRect = AnimatedSvgFix(SvgRect, {
-    propString: ['width', 'height'],
-});
+SvgRect = AnimatedSvgFix(SvgRect, { propString: args });
 export default SvgRect;

@@ -6,6 +6,8 @@ import AnimatedSvgGradientFix from './AnimatedSvgGradientFix';
 
 const NativeSvgLinearGradient = Svg.LinearGradient;
 
+export const args = ['x1', 'y1', 'x2', 'y2'];
+
 class SvgLinearGradient extends Component {
     render() {
         return (
@@ -16,6 +18,6 @@ class SvgLinearGradient extends Component {
     }
 }
 SvgLinearGradient = AnimatedSvgGradientFix(SvgLinearGradient);
-SvgLinearGradient = AnimatedSvgStateFix(SvgLinearGradient, ['x1', 'y1', 'x2', 'y2'], { cancelSetNativeProps: true });
+SvgLinearGradient = AnimatedSvgStateFix(SvgLinearGradient, args, { cancelSetNativeProps: true });
 SvgLinearGradient = Animated.createAnimatedComponent(SvgLinearGradient);
 export default SvgLinearGradient;

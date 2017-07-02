@@ -6,6 +6,8 @@ import AnimatedSvgGradientFix from './AnimatedSvgGradientFix';
 
 const NativeSvgRadialGradient = Svg.RadialGradient;
 
+export const args = ['fx', 'fy', 'rx', 'ry', 'cx', 'cy', 'r'];
+
 class SvgRadialGradient extends Component {
     render() {
         return (
@@ -16,6 +18,6 @@ class SvgRadialGradient extends Component {
     }
 }
 SvgRadialGradient = AnimatedSvgGradientFix(SvgRadialGradient);
-SvgRadialGradient = AnimatedSvgStateFix(SvgRadialGradient, ['fx', 'fy', 'rx', 'ry', 'cx', 'cy', 'r'], { cancelSetNativeProps: true });
+SvgRadialGradient = AnimatedSvgStateFix(SvgRadialGradient, args, { cancelSetNativeProps: true });
 SvgRadialGradient = Animated.createAnimatedComponent(SvgRadialGradient);
 export default SvgRadialGradient;

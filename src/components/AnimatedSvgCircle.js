@@ -4,6 +4,8 @@ import AnimatedSvgFix from './AnimatedSvgFix';
 
 const NativeSvgCircle = Svg.Circle;
 
+export const args = ['r', 'cx', 'cy'];
+
 class SvgCircle extends Component {
     setNativeProps = (props) => {
         this._component && this._component.setNativeProps(props);
@@ -17,7 +19,5 @@ class SvgCircle extends Component {
         );
     }
 }
-SvgCircle = AnimatedSvgFix(SvgCircle, {
-    propString: ['r', 'cx', 'cy']
-});
+SvgCircle = AnimatedSvgFix(SvgCircle, { propString: args });
 export default SvgCircle;

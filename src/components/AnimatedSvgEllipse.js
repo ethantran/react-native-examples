@@ -4,6 +4,8 @@ import AnimatedSvgFix from './AnimatedSvgFix';
 
 const NativeSvgEllipse = Svg.Ellipse;
 
+export const args = ['rx', 'ry', 'cx', 'cy'];
+
 class SvgEllipse extends Component {
     setNativeProps = (props) => {
         this._component && this._component.setNativeProps(props);
@@ -17,7 +19,5 @@ class SvgEllipse extends Component {
         );
     }
 }
-SvgEllipse = AnimatedSvgFix(SvgEllipse, {
-    propString: ['rx', 'ry', 'cx', 'cy']
-});
+SvgEllipse = AnimatedSvgFix(SvgEllipse, { propString: args });
 export default SvgEllipse;

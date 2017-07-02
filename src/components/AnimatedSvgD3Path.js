@@ -11,7 +11,7 @@ import D3PathCommand from './D3PathCommand';
  * Solution: This demonstrates how you can do it with d3-path
  */
 
-const D3Args = {
+export const argsForCommand = {
     moveTo: ['x', 'y'],
     closePath: [],
     lineTo: ['x', 'y'],
@@ -51,7 +51,8 @@ class SvgD3Path extends Component {
     createPathFromSteps = () => {
         let path = d3.path();
         this.steps.forEach((step) => {
-            const args = D3Args[step.command].map((key) => step[key]);
+            let args = argsForCommand[step.command];
+            args = args.map((key) => step[key]);
             path[step.command](...args);
         });
         return path.toString();
@@ -79,7 +80,7 @@ class SvgD3Path extends Component {
                 if (child.type === D3PathCommand) {
                     let step = {};
                     step.command = child.props.command;
-                    const args = D3Args[child.props.command];
+                    const args = argsForCommand[child.props.command];
                     args.forEach((arg) => {
                         const prop = child.props[arg];
                         if (prop instanceof Animated.Value || prop instanceof Animated.Interpolation) {
@@ -100,7 +101,7 @@ class SvgD3Path extends Component {
         React.Children.forEach(children, (child) => {
             if (child) {
                 if (child.type === D3PathCommand) {
-                    const args = D3Args[child.props.command];
+                    const args = argsForCommand[child.props.command];
                     args.forEach((arg) => {
                         const prop = child.props[arg];
                         if (prop instanceof Animated.Value) {
