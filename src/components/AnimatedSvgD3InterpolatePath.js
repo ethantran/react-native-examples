@@ -28,8 +28,12 @@ class SvgD3InterpolatePath extends Component {
         }
         this._component && this._component.setNativeProps(props);
     }
-    componentWillReceiveProps(nextProps) {
-        this.interpolator = createInterpolator(nextProps);
+    shouldComponentUpdate(nextProps) {
+        if (nextProps.d1 !== this.props.d1 || nextProps.d2 !== this.props.d2) {
+            this.interpolator = createInterpolator(nextProps);
+            return true;
+        }
+        return false;
     }
     render() {
         const { t, ...props } = this.props;

@@ -115,12 +115,13 @@ class SvgD3Path extends Component {
         });
         this.listeners = [];
     }
-    componentWillReceiveProps(nextProps) {
+    shouldComponentUpdate(nextProps) {
         if (nextProps.children !== this.props.children) {
             this.removeAllListeners(this.props);
             this.listenToChildren(nextProps);
-            this.setNativeProps({ updateD3Path: true });
+            return true;
         }
+        return false;
     }
     componentWillUnmount() {
         this.removeAllListeners(this.props);

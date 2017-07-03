@@ -4,11 +4,11 @@ import AnimatedSvgPropStringFix from './AnimatedSvgPropStringFix';
 import AnimatedSvgStateFix from './AnimatedSvgStateFix';
 import AnimatedSvgTransformFix from './AnimatedSvgTransformFix';
 
-export default function (Component, { state, propString } = {}) {
+export default function (Component, { state, propString, keepXY } = {}) {
     Component = AnimatedSvgStateFix(Component, state);
     Component = AnimatedSvgBrushFix(Component);
     Component = AnimatedSvgPropStringFix(Component, propString);
-    Component = AnimatedSvgTransformFix(Component);
+    Component = AnimatedSvgTransformFix(Component, { keepXY });
     Component = Animated.createAnimatedComponent(Component);
     return Component;
 }

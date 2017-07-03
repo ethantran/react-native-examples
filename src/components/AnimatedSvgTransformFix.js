@@ -86,16 +86,24 @@ function appendTransform(transform) {
 const UNIVERSAL_KEYS = ['origin', 'scale', 'skew', 'translate'];
 const KEYS = [...UNIVERSAL_KEYS, 'originX', 'originY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'translateX', 'translateY', 'x', 'y', 'rotation', 'rotate'];
 
-export default function SvgTransformFix(WrappedComponent) {
+export default function SvgTransformFix(WrappedComponent, { keepXY } = {}) {
     return class extends Component {
         prevProps = pick(this.props, KEYS)
         setNativeProps = (props) => {
             // if some transform key exists in props, create a new matrix
             if (KEYS.some((key, index) => props[key] != null)) {
                 const matrix = createTransformMatrix(createTransformObject(props, this.prevProps));
+                let x, y;
+                // some components like rect need these still
+                if (keepXY) {
+                    x = props.x && props.x.toString();
+                    y = props.y && props.y.toString();
+                }
                 // remove transform props since they are moved into matrix prop
                 props = omit(props, KEYS);
                 props.matrix = matrix;
+                props.x = x;
+                props.y = y;
                 // cache dynamic prop values since you need them to generate an accurate matrix
                 this.prevProps = Object.assign(this.prevProps, pick(props, KEYS));
             }

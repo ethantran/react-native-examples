@@ -7,6 +7,7 @@ import AnimatedSvgFix from './AnimatedSvgFix';
 /**
  * Problem: What is the best way to animate a path with animated.value?
  * Solution: This demonstrates how you can do it with flubber
+ * BUG: array interpolators doesn't work (options.single = false)
  */
 
 const NativeSvgPath = Svg.Path;
@@ -40,30 +41,46 @@ class SvgFlubberPath extends Component {
         super(props);
         this._components = [];
         this.interpolator = createInterpolator(props);
-        this.cachedRender = this.createRender(props);
     }
     setNativeProps = (props) => {
         if (props.t) {
             if (Array.isArray(this.interpolator)) {
-                return;
+                this.interpolator.forEach((childInterpolator, i) => {
+                    this._components[i].setNativeProps({ d: childInterpolator(props.t) });
+                });
             } else {
                 props.d = this.interpolator(props.t);
             }
         }
         this._component && this._component.setNativeProps(props);
     }
-    createRender = (props) => {
-        const filteredProps = omit(props, flubberArgsForType[props.interpolatorType]);
-        const { t, interpolatorType, children, ...rest } = filteredProps;  // eslint-disable-line no-unused-vars
+    shouldComponentUpdate(nextProps) {
+        const typeChanged = nextProps.interpolatorType !== this.props.interpolatorType;
+        const interpolatorChanged = nextProps.interpolator !== this.props.interpolator;
+        const args = flubberArgsForType[nextProps.interpolatorType] || [];
+        const argChanged = args.some((key, index) => nextProps[key] !== this.props[key]);
+        if (typeChanged || interpolatorChanged || argChanged) {
+            this.interpolator = createInterpolator(nextProps);
+            return true;
+        }
+        return false;
+    }
+    render() {
+        const args = flubberArgsForType[this.props.interpolatorType];
+        const filteredProps = omit(this.props, args);
+        const { t, interpolatorType, interpolator, children, ...rest } = filteredProps;  // eslint-disable-line no-unused-vars
         if (Array.isArray(this.interpolator)) {
             return (
-                <Svg.G>
-                    {this.interpolator.map((interpolator, i) => {
+                <Svg.G
+                    ref={component => (this._component = component)}
+                    {...rest}>
+                    {this.interpolator.map((childInterpolator, i) => {
                         return (
                             <SvgFlubberPath
+                                ref={component => (this._components[i] = component)}
                                 key={i}
-                                {...rest}
-                                interpolator={interpolator}
+                                t={t}
+                                interpolator={childInterpolator}
                             />
                         );
                     })}
@@ -78,15 +95,6 @@ class SvgFlubberPath extends Component {
                 d={d}
             />
         );
-    }
-    componentWillReceiveProps(nextProps) {
-        if ((nextProps.interpolatorType !== this.props.interpolatorType) || (nextProps.interpolator !== this.props.interpolator)) {
-            this.interpolator = createInterpolator(nextProps);
-            this.cachedRender = this.createRender(nextProps);
-        }
-    }
-    render() {
-        return this.cachedRender;
     }
 }
 SvgFlubberPath = AnimatedSvgFix(SvgFlubberPath);

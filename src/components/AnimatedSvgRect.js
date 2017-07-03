@@ -19,5 +19,5 @@ class SvgRect extends Component {
         );
     }
 }
-SvgRect = AnimatedSvgFix(SvgRect, { propString: args });
+SvgRect = AnimatedSvgFix(SvgRect, { propString: args, keepXY: true });
 export default SvgRect;

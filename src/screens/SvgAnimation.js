@@ -19,7 +19,8 @@ import Polygon from '../components/AnimatedSvgPolygon';
 import Polyline from '../components/AnimatedSvgPolyline';
 import D3Path, { argsForCommand as d3PathArgsForCommand } from '../components/AnimatedSvgD3Path';
 import D3InterpolatePath from '../components/AnimatedSvgD3InterpolatePath';
-import D3Shape, { argsForShape as d3ShapeArgsForShape } from '../components/AnimatedSvgD3Shape';
+import D3ShapeArc, { args as d3ShapeArcArgs } from '../components/AnimatedSvgD3ShapeArc';
+import D3ShapePie, { args as d3ShapePieArgs } from '../components/AnimatedSvgD3ShapePie';
 import FlubberPath, { flubberArgsForType } from '../components/AnimatedSvgFlubberPath';
 import AnimatedSvgText from '../components/AnimatedSvgText';
 import TSpan from '../components/AnimatedSvgTSpan';
@@ -30,6 +31,7 @@ import LinearGradient, { args as linearGradientArgs } from '../components/Animat
 import RadialGradient, { args as radialGradientArgs } from '../components/AnimatedSvgRadialGradient';
 import Stop from '../components/AnimatedSvgStop';
 import D3PathCommand from '../components/D3PathCommand';
+import D3ShapeData from '../components/D3ShapeData';
 import StrokeDasharray from '../components/AnimatedSvgStrokeDasharray';
 
 const componentsForType = {
@@ -41,7 +43,8 @@ const componentsForType = {
     Polyline,
     D3Path,
     D3InterpolatePath,
-    D3ShapeArc: D3Shape,
+    D3ShapeArc,
+    D3ShapePie,
     FlubberPath,
     Text,
     TSpan,
@@ -78,8 +81,9 @@ const animTypes = {
     Path: shapeAnimTypes,
     D3Path: [...d3PathCommands, ...shapeAnimTypes],
     D3InterpolatePath: shapeAnimTypes,
-    D3ShapeArc: [...d3ShapeArgsForShape.arc, ...shapeAnimTypes],
-    FlubberPath: [...flubberTypes, ...shapeAnimTypes],
+    D3ShapeArc: [...d3ShapeArcArgs, ...shapeAnimTypes],
+    D3ShapePie: [...d3ShapePieArgs, 'data', ...shapeAnimTypes],
+    FlubberPath: [...flubberTypes, 'separateSingle', 'combineSingle', 'interpolateAllSingleAndMatch', ...shapeAnimTypes],
     Text: textAnimTypes,
     TSpan: ['text+tspan', ...textAnimTypes],
     TextPath: ['startOffset', 'text+textpath+tspan', ...textAnimTypes],
@@ -283,15 +287,36 @@ export default class SvgAnimation extends Component {
                 d1: 'm72.5,167.5c1,0 67,-36 151,2c84,38 166,-15 165.5,-15.5',
                 d2: 'm82.5,187.5c1,0 87,-86 181,2c88,88 186,-15 185.5,-85.5'
             },
-            D3ShapeArc: d3ShapeArgsForShape.arc.reduce((acc, arg) => {
+            D3ShapeArc: d3ShapeArcArgs.reduce((acc, arg) => {
                 acc[arg] = SvgAnimation.defaultProps[arg];
-                acc.generatorType = 'arc';
                 return acc;
-            }, {
+            },
+                {
                     translate: SvgAnimation.defaultProps.translate,
                     stroke: randomColor(),
                     strokeWidth: SvgAnimation.defaultProps.strokeWidth,
-                }),
+                }
+            ),
+            D3ShapePie: d3ShapePieArgs.reduce((acc, arg) => {
+                acc[arg] = SvgAnimation.defaultProps[arg];
+                return acc;
+            },
+                {
+                    translate: SvgAnimation.defaultProps.translate,
+                    children: [1, 1, 2, 3, 5, 8, 13, 21].map((value) => (
+                        <D3ShapeData value={value} {...d3ShapeArcArgs.reduce((acc, arg) => {
+                            acc[arg] = SvgAnimation.defaultProps[arg];
+                            return acc;
+                        },
+                            {
+                                stroke: randomColor(),
+                                strokeWidth: 1,
+                                fill: randomColor(),
+                            }
+                        ) } />
+                    ))
+                }
+            ),
             Text: {
                 fontSize: 40,
                 dx: randomNumber(1, 100),
@@ -392,15 +417,15 @@ export default class SvgAnimation extends Component {
                 options: { maxSegmentLength: 1 }
             };
         });
-        normalPropsForAnimType.separate = {
+        normalPropsForAnimType.separateSingle = {
             ...normalPropsForAnimType.separate,
             options: { single: true }
         };
-        normalPropsForAnimType.combine = {
+        normalPropsForAnimType.combineSingle = {
             ...normalPropsForAnimType.combine,
             options: { single: true }
         };
-        normalPropsForAnimType.interpolateAll = {
+        normalPropsForAnimType.interpolateAllSingleAndMatch = {
             ...normalPropsForAnimType.interpolateAll,
             options: { single: true, match: true }
         };
@@ -434,7 +459,7 @@ export default class SvgAnimation extends Component {
             },
             FlubberPath: {
                 t: this.t
-            },
+            }
         };
         let animPropsForAnimType = {
             'origin+rotation': {
@@ -672,8 +697,8 @@ export default class SvgAnimation extends Component {
             }
         }
         props3 = mergeProps(props, props2, props3);
-        // remove translate from getNormalProps if testing other translate animTypes
-        if (props3.translate != null && (animType === 'translateX' || animType === 'translateY')) {
+        // remove translate from getNormalProps if testing other translate animTypes or a type doesn't need to animate it
+        if (props3.translate != null && !['translateX', 'translateY'].includes(animType) && !['g', 'use'].includes(type)) {
             delete props3.translate;
         }
         return props3;
@@ -697,11 +722,35 @@ export default class SvgAnimation extends Component {
         const normalProps = this.getNormalProps({ type, animType });
         const animProps = this.getAnimProps({ type, animType });
         let props = mergeProps(normalProps, animProps);
-        // need only animchildren if not 'none'
+        // dont merge children
         if (animType !== 'none') {
-            props.children = animProps.children;
+            props.children = animProps.children.length ? animProps.children : normalProps.children;
         }
         return <D3Path {...props} />;
+    }
+
+    renderD3ShapePie({ type = this.state.type, animType = this.state.animType } = {}) {
+        if (type !== 'D3ShapePie') {
+            return null;
+        }
+        const normalProps = this.getNormalProps({ type, animType });
+        const animProps = this.getAnimProps({ type, animType });
+        let props = mergeProps(normalProps, animProps);
+        // need to animchildren if 'data'
+        if (animType === 'data') {
+            let shapedataprops = {
+                stroke: randomColor(),
+                strokeWidth: 1,
+                fill: randomColor()
+            };
+            props.children = [this.x, this.y, this.dx, this.dy, this.cx, this.cy, this.fx, this.fy].map((value) => (
+                <D3ShapeData value={value} {...d3ShapeArcArgs.reduce((acc, arg) => {
+                    acc[arg] = SvgAnimation.defaultProps[arg];
+                    return acc;
+                }, shapedataprops) } />
+            ));
+        }
+        return <D3ShapePie {...props} />;
     }
 
     renderText({ type = this.state.type, animType = this.state.animType } = {}) {
@@ -951,16 +1000,17 @@ export default class SvgAnimation extends Component {
                             {this.renderLinearGradient()}
                             {this.renderRadialGradient()}
                         </Defs>
-                        {this.renderComponent({requiredType: 'Circle'})}
-                        {this.renderComponent({requiredType: 'Rect'})}
-                        {this.renderComponent({requiredType: 'Ellipse'})}
-                        {this.renderComponent({requiredType: 'Line'})}
-                        {this.renderComponent({requiredType: 'Polygon'})}
-                        {this.renderComponent({requiredType: 'Polyline'})}
+                        {this.renderComponent({ requiredType: 'Circle' })}
+                        {this.renderComponent({ requiredType: 'Rect' })}
+                        {this.renderComponent({ requiredType: 'Ellipse' })}
+                        {this.renderComponent({ requiredType: 'Line' })}
+                        {this.renderComponent({ requiredType: 'Polygon' })}
+                        {this.renderComponent({ requiredType: 'Polyline' })}
                         {this.renderD3Path()}
-                        {this.renderComponent({requiredType: 'D3InterpolatePath'})}
-                        {this.renderComponent({requiredType: 'D3ShapeArc'})}
-                        {this.renderComponent({requiredType: 'FlubberPath'})}
+                        {this.renderComponent({ requiredType: 'D3InterpolatePath' })}
+                        {this.renderComponent({ requiredType: 'D3ShapeArc' })}
+                        {this.renderD3ShapePie()}
+                        {this.renderComponent({ requiredType: 'FlubberPath' })}
                         {this.renderText()}
                         {this.renderTSpan()}
                         {this.renderTextPath()}
