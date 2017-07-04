@@ -40,7 +40,10 @@ class SvgD3ShapeArea extends Component {
         if (argChanged) {
             this.generator = createGenerator(props);
         }
-        if (argChanged || props.updateD3Shape) {
+        if (props.data) {
+            this.data = this.listenToData(props);
+        }
+        if (argChanged || props.updateD3Shape || props.data) {
             props.d = createPath(this.generator, this.data);
             this.prevProps = Object.assign(this.prevProps, pick(props, args));
         }
@@ -126,7 +129,7 @@ class SvgD3ShapeArea extends Component {
     shouldComponentUpdate(nextProps) {
         const argChanged = args.some((key, index) => nextProps[key] !== this.props[key]);
         const childrenChanged = nextProps.children !== this.props.children;
-        const dataChanged = nextProps.children !== this.props.children;
+        const dataChanged = nextProps.data !== this.props.data;
         if (argChanged) {
             this.generator = createGenerator(nextProps);
         }

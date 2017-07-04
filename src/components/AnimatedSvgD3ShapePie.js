@@ -129,7 +129,7 @@ class SvgD3ShapePie extends Component {
     shouldComponentUpdate(nextProps) {
         const argChanged = args.some((key, index) => nextProps[key] !== this.props[key]);
         const childrenChanged = nextProps.children !== this.props.children;
-        const dataChanged = nextProps.children !== this.props.children;
+        const dataChanged = nextProps.data !== this.props.data;
         if (argChanged) {
             this.generator = createGenerator(nextProps);
         }

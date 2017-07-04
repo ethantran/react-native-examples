@@ -7,13 +7,12 @@ import omit from 'lodash/omit';
 
 import AnimatedSvgFix from './AnimatedSvgFix';
 import D3ShapeData from './D3ShapeData';
+import D3ShapeArea from './AnimatedSvgD3ShapeArea';
 
-const NativeSvgPath = Svg.Path;
-
-export const args = ['x', 'y', 'defined', 'curve'];
+export const args = ['keys', 'value', 'order', 'offset'];
 
 function createGenerator(props) {
-    let gen = d3.line();
+    let gen = d3.stack();
     return args.reduce((acc, arg) => {
         const prop = props[arg];
         if (prop) {
@@ -23,7 +22,7 @@ function createGenerator(props) {
     }, gen);
 }
 
-function createPath(generator, data) {
+function getAreaData(generator, data) {
     return generator(data);
 }
 
@@ -33,21 +32,25 @@ class SvgD3ShapeLine extends Component {
         this.generator = createGenerator(props);
         this.prevProps = pick(props, args);
         this.data = props.children && props.children.length ? this.listenToChildren(props) : this.listenToData(props);
-        this.d = createPath(this.generator, this.data);
+        this.areaData = getAreaData(this.generator, this.data.items);
+        this._components = [];
     }
     setNativeProps = (props = {}) => {
         const argChanged = args.some((key, index) => props[key] != null);
         if (argChanged) {
             this.generator = createGenerator(props);
-            this.prevProps = Object.assign(this.prevProps, pick(props, args));
         }
         if (argChanged || props.updateD3Shape) {
-            props.d = createPath(this.generator, this.data);
+            this.areaData = getAreaData(this.generator, this.data.items);
+            this.areaData.forEach((dataItem, i) => {
+                this._components[i].setNativeProps({ data: dataItem, ...this.data.props[i]});
+            });
+            this.prevProps = Object.assign(this.prevProps, pick(props, args));
         }
         this._component && this._component.setNativeProps(props);
     }
     updateDataItemProp = (dataIndex, propKey, value) => {
-        let newData = [...this.data];
+        let newData = [...this.data.items];
         let newDataItem = {
             ...newData[dataIndex],
             [propKey]: value
@@ -65,42 +68,53 @@ class SvgD3ShapeLine extends Component {
         let prevCallback = callback;
         callback = e => {
             const value = prevCallback(e.value);
-            this.data = this.updateDataItemProp(dataIndex, propKey, value);
+            this.data.items = this.updateDataItemProp(dataIndex, propKey, value);
             this.setNativeProps({ updateD3Shape: true });
         };
         return addListener(callback);
     }
-    listenToChildren = ({ children }) => {
+    listenToChildren = ({ children, keys }) => {
         this.listeners = [];
-        let data = [];
+        let data = { items: [], props: [] };
         let dataIndex = 0;
         React.Children.forEach(children, (child) => {
             if (child) {
                 if (child.type === D3ShapeData) {
-                    const dataItem = this.listenToDataItem(child.props, dataIndex);
-                    data[dataIndex] = dataItem;
+                    const result = this.listenToDataItem(child.props, keys, dataIndex);
+                    data.items[dataIndex] = result.items;
+                    data.props[dataIndex] = result.props;
                     dataIndex += 1;
                 }
             }
         });
         return data;
     }
-    listenToData = ({ data }) => {
+    listenToData = ({ data, keys }) => {
         this.listeners = [];
-        return data.map((dataItem, index) => this.listenToDataItem(dataItem, index));
+        return data.reduce((acc, dataItem, index) => {
+            const result = this.listenToDataItem(dataItem, keys, index);
+            acc.items[index] = result.items;
+            acc.props[index] = result.props;
+            return acc;
+        }, { items: [], props: [] });
     }
-    listenToDataItem = (props, dataIndex) => {
-        return Object.keys(props).reduce((acc, key) => {
+    listenToDataItem = (props, keys, dataIndex) => {
+        const pickedProps = pick(props, [...keys, 'index']);
+        const restProps = omit(props, keys);
+        return Object.keys(pickedProps).reduce((acc, key) => {
             const prop = props[key];
             if (prop instanceof Animated.Value || prop instanceof Animated.Interpolation) {
-                acc[key] = prop.__getValue();
+                acc.items[key] = prop.__getValue();
                 const listener = this.addListenerForAnimatedArgProp(prop, dataIndex, key);
                 this.listeners.push(listener);
             } else {
-                acc[key] = prop;
+                acc.items[key] = prop;
             }
             return acc;
-        }, {});
+        }, {
+            items: [],
+            props: restProps
+        });
     }
     removeAllListeners = ({ children, data }) => {
         React.Children.forEach(children, (child) => {
@@ -146,11 +160,20 @@ class SvgD3ShapeLine extends Component {
     render() {
         const filteredProps = omit(this.props, args);
         return (
-            <NativeSvgPath
+            <Svg.G
                 ref={component => (this._component = component)}
-                {...filteredProps}
-                d={this.d}
-            />
+                {...filteredProps}>
+                {this.areaData.map((areaDataItem, i) => {
+                    return (
+                        <D3ShapeArea
+                            key={i}
+                            ref={component => (this._components[i] = component)}
+                            data={areaDataItem}
+                            {...this.data.props[i]}
+                        />
+                    );
+                })}
+            </Svg.G>
         );
     }
 }

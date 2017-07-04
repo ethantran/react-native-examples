@@ -25,6 +25,7 @@ import D3ShapeLine, { args as d3ShapeLineArgs } from '../components/AnimatedSvgD
 import D3ShapeLineRadial, { args as d3ShapeLineRadialArgs } from '../components/AnimatedSvgD3ShapeLineRadial';
 import D3ShapeArea, { args as d3ShapeAreaArgs } from '../components/AnimatedSvgD3ShapeArea';
 import D3ShapeAreaRadial, { args as d3ShapeAreaRadialArgs } from '../components/AnimatedSvgD3ShapeAreaRadial';
+import D3ShapeStack, { args as d3ShapeStackArgs } from '../components/AnimatedSvgD3ShapeStack';
 import FlubberPath, { flubberArgsForType } from '../components/AnimatedSvgFlubberPath';
 import AnimatedSvgText from '../components/AnimatedSvgText';
 import TSpan from '../components/AnimatedSvgTSpan';
@@ -53,6 +54,7 @@ const componentsForType = {
     D3ShapeLineRadial,
     D3ShapeArea,
     D3ShapeAreaRadial,
+    D3ShapeStack,
     FlubberPath,
     Text,
     TSpan,
@@ -95,6 +97,7 @@ const animTypes = {
     D3ShapeLineRadial: [...d3ShapeLineRadialArgs, 'data', ...shapeAnimTypes],
     D3ShapeArea: [...d3ShapeAreaArgs, 'data', ...shapeAnimTypes],
     D3ShapeAreaRadial: [...d3ShapeAreaRadialArgs, 'data', ...shapeAnimTypes],
+    D3ShapeStack: [...d3ShapeStackArgs, 'data', ...shapeAnimTypes],
     FlubberPath: [...flubberTypes, 'separateSingle', 'combineSingle', 'interpolateAllSingleAndMatch', ...shapeAnimTypes],
     Text: textAnimTypes,
     TSpan: ['text+tspan', ...textAnimTypes],
@@ -382,16 +385,14 @@ export default class SvgAnimation extends Component {
             if (USE_D3_SHAPE_DATA) {
                 return <D3ShapeData fill={randomColor()} {...pieDataItemProps} {...dataItem} />;
             }
-            return {fill: randomColor(), ...pieDataItemProps, ...dataItem};
+            return { fill: randomColor(), ...pieDataItemProps, ...dataItem };
         });
         normalPropsForType.D3ShapePie = {
             ...pick(SvgAnimation.defaultProps, d3ShapeArcArgs),
             translate: SvgAnimation.defaultProps.translate,
             [dataKey]: pieData
         };
-        const lineAndAreaData = USE_D3_SHAPE_DATA ? data.map((dataItem) => (
-            <D3ShapeData {...dataItem} />
-        )) : data;
+        const lineAndAreaData = USE_D3_SHAPE_DATA ? data.map((dataItem) => <D3ShapeData {...dataItem} />) : data;
         const lineData = {
             translate: SvgAnimation.defaultProps.translate,
             stroke: randomColor(),
@@ -418,6 +419,19 @@ export default class SvgAnimation extends Component {
         normalPropsForType.D3ShapeAreaRadial = {
             ...pick(SvgAnimation.defaultProps, d3ShapeAreaRadialArgs),
             ...areaData
+        };
+        const stackData = {
+            [dataKey]: [
+                { index: 0, apples: 3840, bananas: 1920, cherries: 960, dates: 400, fill: randomColor() },
+                { index: 1, apples: 1600, bananas: 1440, cherries: 960, dates: 400, fill: randomColor() },
+                { index: 2, apples: 640, bananas: 960, cherries: 640, dates: 400, fill: randomColor() },
+                { index: 3, apples: 320, bananas: 480, cherries: 640, dates: 400, fill: randomColor() }
+            ].map((dataItem) => USE_D3_SHAPE_DATA ? <D3ShapeData {...dataItem} /> : dataItem)
+        };
+        normalPropsForType.D3ShapeStack = {
+            ...pick(SvgAnimation.defaultProps, d3ShapeStackArgs),
+            ...stackData,
+            keys: ['apples', 'bananas', 'cherries', 'dates'],
         };
         let normalPropsForAnimType = {
             stroke: {
@@ -802,7 +816,7 @@ export default class SvgAnimation extends Component {
         props.value = d => d.value;
         // need to animchildren if 'data'
         if (animType === 'data') {
-            
+
         }
         return <D3ShapePie {...props } />;
     }
@@ -888,6 +902,21 @@ export default class SvgAnimation extends Component {
             props.angle = d => d.index * 2 * Math.PI / this.animatedValues.length;
         }
         return <D3ShapeAreaRadial {...props} />;
+    }
+
+    renderD3ShapeStack({ type = this.state.type, animType = this.state.animType } = {}) {
+        if (type !== 'D3ShapeStack') {
+            return null;
+        }
+        const normalProps = this.getNormalProps({ type, animType });
+        const animProps = this.getAnimProps({ type, animType });
+        let props = mergeProps(normalProps, animProps);
+        // remove props that cannot be animated
+        delete props.offset;
+        if (animType === 'data') {
+
+        }
+        return <D3ShapeStack {...props } />;
     }
 
     renderText({ type = this.state.type, animType = this.state.animType } = {}) {
@@ -1151,6 +1180,7 @@ export default class SvgAnimation extends Component {
                         {this.renderD3ShapeLineRadial()}
                         {this.renderD3ShapeArea()}
                         {this.renderD3ShapeAreaRadial()}
+                        {this.renderD3ShapeStack()}
                         {this.renderComponent({ requiredType: 'FlubberPath' })}
                         {this.renderText()}
                         {this.renderTSpan()}
