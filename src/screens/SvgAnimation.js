@@ -22,6 +22,7 @@ import D3InterpolatePath from '../components/AnimatedSvgD3InterpolatePath';
 import D3ShapeArc, { args as d3ShapeArcArgs } from '../components/AnimatedSvgD3ShapeArc';
 import D3ShapePie, { args as d3ShapePieArgs } from '../components/AnimatedSvgD3ShapePie';
 import D3ShapeLine, { args as d3ShapeLineArgs } from '../components/AnimatedSvgD3ShapeLine';
+import D3ShapeLineRadial, { args as d3ShapeLineRadialArgs } from '../components/AnimatedSvgD3ShapeLineRadial';
 import FlubberPath, { flubberArgsForType } from '../components/AnimatedSvgFlubberPath';
 import AnimatedSvgText from '../components/AnimatedSvgText';
 import TSpan from '../components/AnimatedSvgTSpan';
@@ -47,6 +48,7 @@ const componentsForType = {
     D3ShapeArc,
     D3ShapePie,
     D3ShapeLine,
+    D3ShapeLineRadial,
     FlubberPath,
     Text,
     TSpan,
@@ -86,6 +88,7 @@ const animTypes = {
     D3ShapeArc: [...d3ShapeArcArgs, ...shapeAnimTypes],
     D3ShapePie: [...d3ShapePieArgs, 'data', ...shapeAnimTypes],
     D3ShapeLine: [...d3ShapeLineArgs, 'data', ...shapeAnimTypes],
+    D3ShapeLineRadial: [...d3ShapeLineRadialArgs, 'data', ...shapeAnimTypes],
     FlubberPath: [...flubberTypes, 'separateSingle', 'combineSingle', 'interpolateAllSingleAndMatch', ...shapeAnimTypes],
     Text: textAnimTypes,
     TSpan: ['text+tspan', ...textAnimTypes],
@@ -189,9 +192,11 @@ function createDefaultProps() {
 
         startOffset: Math.round(randomNumber(1, 100)),
 
+        angle: randomNumber(0, 2 * Math.PI),
         startAngle: randomNumber(0, Math.PI),
         endAngle: randomNumber(2 * Math.PI, 3 * Math.PI),
         padAngle: Math.random(),
+        radius: Math.round(randomNumber(1, 100)),
         innerRadius: Math.round(randomNumber(0, 50)),
         outerRadius: Math.round(randomNumber(60, 100)),
         cornerRadius: Math.round(randomNumber(0, 5)),
@@ -294,49 +299,6 @@ export default class SvgAnimation extends Component {
                 d1: 'm72.5,167.5c1,0 67,-36 151,2c84,38 166,-15 165.5,-15.5',
                 d2: 'm82.5,187.5c1,0 87,-86 181,2c88,88 186,-15 185.5,-85.5'
             },
-            D3ShapeArc: d3ShapeArcArgs.reduce((acc, arg) => {
-                acc[arg] = SvgAnimation.defaultProps[arg];
-                return acc;
-            },
-                {
-                    translate: SvgAnimation.defaultProps.translate,
-                    stroke: randomColor(),
-                    strokeWidth: SvgAnimation.defaultProps.strokeWidth,
-                }
-            ),
-            D3ShapePie: d3ShapePieArgs.reduce((acc, arg) => {
-                acc[arg] = SvgAnimation.defaultProps[arg];
-                return acc;
-            },
-                {
-                    translate: SvgAnimation.defaultProps.translate,
-                    children: [1, 1, 2, 3, 5, 8, 13, 21].map((value) => (
-                        <D3ShapeData value={value} {...d3ShapeArcArgs.reduce((acc, arg) => {
-                            acc[arg] = SvgAnimation.defaultProps[arg];
-                            return acc;
-                        },
-                            {
-                                stroke: randomColor(),
-                                strokeWidth: 1,
-                                fill: randomColor(),
-                            }
-                        ) } />
-                    ))
-                }
-            ),
-            D3ShapeLine: d3ShapeLineArgs.reduce((acc, arg) => {
-                acc[arg] = SvgAnimation.defaultProps[arg];
-                return acc;
-            },
-                {
-                    translate: SvgAnimation.defaultProps.translate,
-                    stroke: randomColor(),
-                    strokeWidth: SvgAnimation.defaultProps.strokeWidth,
-                    children: data.map((dataItem) => (
-                        <D3ShapeData {...dataItem} />
-                    ))
-                }
-            ),
             Text: {
                 fontSize: 40,
                 dx: randomNumber(1, 100),
@@ -397,6 +359,40 @@ export default class SvgAnimation extends Component {
             r: SvgAnimation.defaultProps.r,
             width: SvgAnimation.defaultProps.width,
             height: SvgAnimation.defaultProps.height,
+        };
+        normalPropsForType.D3ShapeArc = {
+            ...pick(SvgAnimation.defaultProps, d3ShapeArcArgs),
+            translate: SvgAnimation.defaultProps.translate,
+            stroke: randomColor(),
+            strokeWidth: SvgAnimation.defaultProps.strokeWidth,
+        };
+        normalPropsForType.D3ShapePie = {
+            ...pick(SvgAnimation.defaultProps, d3ShapeArcArgs),
+            translate: SvgAnimation.defaultProps.translate,
+            children: [1, 1, 2, 3, 5, 8, 13, 21].map((value) => {
+                const shapeDataProps = {
+                    ...pick(SvgAnimation.defaultProps, d3ShapeArcArgs),
+                    translate: SvgAnimation.defaultProps.translate,
+                    fill: randomColor(),
+                };
+                return <D3ShapeData value={value} {...shapeDataProps} />;
+            })
+        };
+        const lineData = {
+            translate: SvgAnimation.defaultProps.translate,
+            stroke: randomColor(),
+            strokeWidth: SvgAnimation.defaultProps.strokeWidth,
+            children: data.map((dataItem) => (
+                <D3ShapeData {...dataItem} />
+            ))
+        };
+        normalPropsForType.D3ShapeLine = {
+            ...pick(SvgAnimation.defaultProps, d3ShapeLineArgs),
+            ...lineData
+        };
+        normalPropsForType.D3ShapeLineRadial = {
+            ...pick(SvgAnimation.defaultProps, d3ShapeLineRadialArgs),
+            ...lineData
         };
         let normalPropsForAnimType = {
             stroke: {
@@ -660,10 +656,12 @@ export default class SvgAnimation extends Component {
             Animated.spring(this.strokeDashoffset, { toValue: randomNumber(5, 100) }),
             Animated.spring(this.strokeMiterlimit, { toValue: randomNumber(5, 15) }),
 
+            Animated.spring(this.angle, { toValue: randomNumber(0, 2 * Math.PI) }),
             Animated.spring(this.startAngle, { toValue: randomNumber(0, Math.PI) }),
             Animated.spring(this.endAngle, { toValue: randomNumber(2 * Math.PI, 3 * Math.PI) }),
             Animated.spring(this.padAngle, { toValue: Math.random() }),
 
+            Animated.spring(this.radius, { toValue: randomNumber(0, 100) }),
             Animated.spring(this.innerRadius, { toValue: randomNumber(0, 50) }),
             Animated.spring(this.outerRadius, { toValue: randomNumber(60, 100) }),
             Animated.spring(this.cornerRadius, { toValue: randomNumber(0, 5) }),
@@ -790,6 +788,32 @@ export default class SvgAnimation extends Component {
             });
         }
         return <D3ShapeLine {...props} />;
+    }
+
+    renderD3ShapeLineRadial({ type = this.state.type, animType = this.state.animType } = {}) {
+        if (type !== 'D3ShapeLineRadial') {
+            return null;
+        }
+        const normalProps = this.getNormalProps({ type, animType });
+        const animProps = this.getAnimProps({ type, animType });
+        let props = mergeProps(normalProps, animProps);
+        props.fill = 'none';
+        // x and y are functions so cannot animate
+        props.angle = d => d.index * 2 * Math.PI / this.data.length;
+        props.radius = d => {
+            const ratio = d.value / Dimensions.get('window').width;
+            return 50 + 50 * ratio;
+        };
+        // need to animchildren if 'data'
+        if (animType === 'data') {
+            props.angle = d => d.index * 2 * Math.PI / this.animatedValues.length;
+            props.children = this.animatedValues.map((value, index) => {
+                const data = { index, value };
+                return <D3ShapeData {...data} />;
+            });
+        }
+        console.log(props)
+        return <D3ShapeLineRadial {...props} />;
     }
 
 
@@ -1051,6 +1075,7 @@ export default class SvgAnimation extends Component {
                         {this.renderComponent({ requiredType: 'D3ShapeArc' })}
                         {this.renderD3ShapePie()}
                         {this.renderD3ShapeLine()}
+                        {this.renderD3ShapeLineRadial()}
                         {this.renderComponent({ requiredType: 'FlubberPath' })}
                         {this.renderText()}
                         {this.renderTSpan()}
