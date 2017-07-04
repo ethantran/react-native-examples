@@ -40,9 +40,8 @@ class SvgD3ShapeArc extends Component {
         const argChanged = args.some((key, index) => nextProps[key] !== this.props[key]);
         if (argChanged) {
             this.d = createPath(this.generator, this.props, this.prevProps);
-            return true;
         }
-        return false;
+        return argChanged;
     }
     render() {
         const filteredProps = omit(this.props, args);

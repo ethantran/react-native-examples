@@ -21,6 +21,7 @@ import D3Path, { argsForCommand as d3PathArgsForCommand } from '../components/An
 import D3InterpolatePath from '../components/AnimatedSvgD3InterpolatePath';
 import D3ShapeArc, { args as d3ShapeArcArgs } from '../components/AnimatedSvgD3ShapeArc';
 import D3ShapePie, { args as d3ShapePieArgs } from '../components/AnimatedSvgD3ShapePie';
+import D3ShapeLine, { args as d3ShapeLineArgs } from '../components/AnimatedSvgD3ShapeLine';
 import FlubberPath, { flubberArgsForType } from '../components/AnimatedSvgFlubberPath';
 import AnimatedSvgText from '../components/AnimatedSvgText';
 import TSpan from '../components/AnimatedSvgTSpan';
@@ -45,6 +46,7 @@ const componentsForType = {
     D3InterpolatePath,
     D3ShapeArc,
     D3ShapePie,
+    D3ShapeLine,
     FlubberPath,
     Text,
     TSpan,
@@ -83,6 +85,7 @@ const animTypes = {
     D3InterpolatePath: shapeAnimTypes,
     D3ShapeArc: [...d3ShapeArcArgs, ...shapeAnimTypes],
     D3ShapePie: [...d3ShapePieArgs, 'data', ...shapeAnimTypes],
+    D3ShapeLine: [...d3ShapeLineArgs, 'data', ...shapeAnimTypes],
     FlubberPath: [...flubberTypes, 'separateSingle', 'combineSingle', 'interpolateAllSingleAndMatch', ...shapeAnimTypes],
     Text: textAnimTypes,
     TSpan: ['text+tspan', ...textAnimTypes],
@@ -160,9 +163,9 @@ function createDefaultProps() {
         skewX: Math.round(randomNumber(1, 10)),
         skewY: Math.round(randomNumber(1, 10)),
 
-        translate: Math.round(randomNumber(0, Dimensions.get('window').width)),
-        translateX: Math.round(randomNumber(1, Dimensions.get('window').width)),
-        translateY: Math.round(randomNumber(1, Dimensions.get('window').height)),
+        translate: Math.round(randomNumber(0, Dimensions.get('window').width / 2)),
+        translateX: Math.round(randomNumber(1, Dimensions.get('window').width / 2)),
+        translateY: Math.round(randomNumber(1, Dimensions.get('window').height / 2)),
 
         rotate: Math.round(randomNumber(1, 360)),
         rotation: Math.round(randomNumber(1, 360)),
@@ -220,11 +223,14 @@ export default class SvgAnimation extends Component {
     }
 
     createAnimValues() {
+        this.animatedValues = [];
         const propKeys = Object.keys(SvgAnimation.defaultProps);
         propKeys.forEach(key => {
             const value = this.props[key];
             if (typeof value === 'number') {
-                this[key] = new Animated.Value(value);
+                const animatedValue = new Animated.Value(value);
+                this[key] = animatedValue;
+                this.animatedValues.push(animatedValue);
             }
         });
         this.fill = this.inputFill.interpolate({
@@ -251,6 +257,7 @@ export default class SvgAnimation extends Component {
     }
 
     createNormalProps() {
+        const data = Array(50).fill().map((val, i) => ({ index: i, value: randomNumber(0, 100) }));
         const transformProps = {
             origin: SvgAnimation.defaultProps.origin,
             skew: SvgAnimation.defaultProps.skew,
@@ -314,6 +321,19 @@ export default class SvgAnimation extends Component {
                                 fill: randomColor(),
                             }
                         ) } />
+                    ))
+                }
+            ),
+            D3ShapeLine: d3ShapeLineArgs.reduce((acc, arg) => {
+                acc[arg] = SvgAnimation.defaultProps[arg];
+                return acc;
+            },
+                {
+                    translate: SvgAnimation.defaultProps.translate,
+                    stroke: randomColor(),
+                    strokeWidth: SvgAnimation.defaultProps.strokeWidth,
+                    children: data.map((dataItem) => (
+                        <D3ShapeData {...dataItem} />
                     ))
                 }
             ),
@@ -429,6 +449,7 @@ export default class SvgAnimation extends Component {
             ...normalPropsForAnimType.interpolateAll,
             options: { single: true, match: true }
         };
+        this.data = data;
         this.regularCommands = regularCommands;
         this.normalPropsForType = normalPropsForType;
         this.normalPropsForAnimType = normalPropsForAnimType;
@@ -620,9 +641,9 @@ export default class SvgAnimation extends Component {
             Animated.spring(this.skewX, { toValue: Math.round(randomNumber(1, 10)) }),
             Animated.spring(this.skewY, { toValue: Math.round(randomNumber(1, 10)) }),
 
-            Animated.spring(this.translate, { toValue: Math.round(randomNumber(1, Dimensions.get('window').width)) }),
-            Animated.spring(this.translateX, { toValue: Math.round(randomNumber(1, Dimensions.get('window').width)) }),
-            Animated.spring(this.translateY, { toValue: Math.round(randomNumber(1, Dimensions.get('window').height)) }),
+            Animated.spring(this.translate, { toValue: Math.round(randomNumber(1, Dimensions.get('window').width / 2)) }),
+            Animated.spring(this.translateX, { toValue: Math.round(randomNumber(1, Dimensions.get('window').width / 2)) }),
+            Animated.spring(this.translateY, { toValue: Math.round(randomNumber(1, Dimensions.get('window').height / 2)) }),
 
             Animated.spring(this.rotate, { toValue: Math.round(randomNumber(1, 360)) }),
             Animated.spring(this.rotation, { toValue: Math.round(randomNumber(1, 360)) }),
@@ -738,20 +759,39 @@ export default class SvgAnimation extends Component {
         let props = mergeProps(normalProps, animProps);
         // need to animchildren if 'data'
         if (animType === 'data') {
-            let shapedataprops = {
-                stroke: randomColor(),
-                strokeWidth: 1,
-                fill: randomColor()
-            };
-            props.children = [this.x, this.y, this.dx, this.dy, this.cx, this.cy, this.fx, this.fy].map((value) => (
-                <D3ShapeData value={value} {...d3ShapeArcArgs.reduce((acc, arg) => {
-                    acc[arg] = SvgAnimation.defaultProps[arg];
-                    return acc;
-                }, shapedataprops) } />
+            let shapeDataProps = d3ShapeArcArgs.reduce((acc, arg) => {
+                acc[arg] = SvgAnimation.defaultProps[arg];
+                return acc;
+            }, { fill: randomColor() });
+            props.children = this.animatedValues.map((value) => (
+                <D3ShapeData value={value} {...shapeDataProps} />
             ));
         }
-        return <D3ShapePie {...props} />;
+        return <D3ShapePie {...props } />;
     }
+
+    renderD3ShapeLine({ type = this.state.type, animType = this.state.animType } = {}) {
+        if (type !== 'D3ShapeLine') {
+            return null;
+        }
+        const normalProps = this.getNormalProps({ type, animType });
+        const animProps = this.getAnimProps({ type, animType });
+        let props = mergeProps(normalProps, animProps);
+        props.fill = 'none';
+        // x and y are functions so cannot animate
+        props.x = d => d.index * Dimensions.get('window').width / this.data.length;
+        props.y = d => d.value;
+        // need to animchildren if 'data'
+        if (animType === 'data') {
+            props.x = d => d.index * Dimensions.get('window').width / this.animatedValues.length;
+            props.children = this.animatedValues.map((value, index) => {
+                const data = { index, value };
+                return <D3ShapeData {...data} />;
+            });
+        }
+        return <D3ShapeLine {...props} />;
+    }
+
 
     renderText({ type = this.state.type, animType = this.state.animType } = {}) {
         if (type !== 'Text') {
@@ -1010,6 +1050,7 @@ export default class SvgAnimation extends Component {
                         {this.renderComponent({ requiredType: 'D3InterpolatePath' })}
                         {this.renderComponent({ requiredType: 'D3ShapeArc' })}
                         {this.renderD3ShapePie()}
+                        {this.renderD3ShapeLine()}
                         {this.renderComponent({ requiredType: 'FlubberPath' })}
                         {this.renderText()}
                         {this.renderTSpan()}
