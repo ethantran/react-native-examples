@@ -23,6 +23,8 @@ import D3ShapeArc, { args as d3ShapeArcArgs } from '../components/AnimatedSvgD3S
 import D3ShapePie, { args as d3ShapePieArgs } from '../components/AnimatedSvgD3ShapePie';
 import D3ShapeLine, { args as d3ShapeLineArgs } from '../components/AnimatedSvgD3ShapeLine';
 import D3ShapeLineRadial, { args as d3ShapeLineRadialArgs } from '../components/AnimatedSvgD3ShapeLineRadial';
+import D3ShapeArea, { args as d3ShapeAreaArgs } from '../components/AnimatedSvgD3ShapeArea';
+import D3ShapeAreaRadial, { args as d3ShapeAreaRadialArgs } from '../components/AnimatedSvgD3ShapeAreaRadial';
 import FlubberPath, { flubberArgsForType } from '../components/AnimatedSvgFlubberPath';
 import AnimatedSvgText from '../components/AnimatedSvgText';
 import TSpan from '../components/AnimatedSvgTSpan';
@@ -49,6 +51,8 @@ const componentsForType = {
     D3ShapePie,
     D3ShapeLine,
     D3ShapeLineRadial,
+    D3ShapeArea,
+    D3ShapeAreaRadial,
     FlubberPath,
     Text,
     TSpan,
@@ -89,6 +93,8 @@ const animTypes = {
     D3ShapePie: [...d3ShapePieArgs, 'data', ...shapeAnimTypes],
     D3ShapeLine: [...d3ShapeLineArgs, 'data', ...shapeAnimTypes],
     D3ShapeLineRadial: [...d3ShapeLineRadialArgs, 'data', ...shapeAnimTypes],
+    D3ShapeArea: [...d3ShapeAreaArgs, 'data', ...shapeAnimTypes],
+    D3ShapeAreaRadial: [...d3ShapeAreaRadialArgs, 'data', ...shapeAnimTypes],
     FlubberPath: [...flubberTypes, 'separateSingle', 'combineSingle', 'interpolateAllSingleAndMatch', ...shapeAnimTypes],
     Text: textAnimTypes,
     TSpan: ['text+tspan', ...textAnimTypes],
@@ -393,6 +399,21 @@ export default class SvgAnimation extends Component {
         normalPropsForType.D3ShapeLineRadial = {
             ...pick(SvgAnimation.defaultProps, d3ShapeLineRadialArgs),
             ...lineData
+        };
+        const areaData = {
+            translate: SvgAnimation.defaultProps.translate,
+            fill: randomColor(),
+            children: data.map((dataItem) => (
+                <D3ShapeData {...dataItem} />
+            ))
+        };
+        normalPropsForType.D3ShapeArea = {
+            ...pick(SvgAnimation.defaultProps, d3ShapeAreaArgs),
+            ...areaData
+        };
+        normalPropsForType.D3ShapeAreaRadial = {
+            ...pick(SvgAnimation.defaultProps, d3ShapeAreaRadialArgs),
+            ...areaData
         };
         let normalPropsForAnimType = {
             stroke: {
@@ -798,7 +819,7 @@ export default class SvgAnimation extends Component {
         const animProps = this.getAnimProps({ type, animType });
         let props = mergeProps(normalProps, animProps);
         props.fill = 'none';
-        // x and y are functions so cannot animate
+        // angle and radius are functions so cannot animate
         props.angle = d => d.index * 2 * Math.PI / this.data.length;
         props.radius = d => {
             const ratio = d.value / Dimensions.get('window').width;
@@ -812,10 +833,60 @@ export default class SvgAnimation extends Component {
                 return <D3ShapeData {...data} />;
             });
         }
-        console.log(props)
         return <D3ShapeLineRadial {...props} />;
     }
 
+    renderD3ShapeArea({ type = this.state.type, animType = this.state.animType } = {}) {
+        if (type !== 'D3ShapeArea') {
+            return null;
+        }
+        const normalProps = this.getNormalProps({ type, animType });
+        const animProps = this.getAnimProps({ type, animType });
+        let props = mergeProps(normalProps, animProps);
+        // x and y1 are functions so cannot animate
+        props.x = d => d.index * Dimensions.get('window').width / this.data.length;
+        props.y1 = d => d.value;
+        delete props.x1;
+        props.y = Dimensions.get('window').height / 2;
+        delete props.translate;
+        // need to animchildren if 'data'
+        if (animType === 'data') {
+            props.x = d => d.index * Dimensions.get('window').width / this.animatedValues.length;
+            props.children = this.animatedValues.map((value, index) => {
+                const data = { index, value };
+                return <D3ShapeData {...data} />;
+            });
+        }
+        return <D3ShapeArea {...props} />;
+    }
+
+    renderD3ShapeAreaRadial({ type = this.state.type, animType = this.state.animType } = {}) {
+        if (type !== 'D3ShapeAreaRadial') {
+            return null;
+        }
+        const normalProps = this.getNormalProps({ type, animType });
+        const animProps = this.getAnimProps({ type, animType });
+        let props = mergeProps(normalProps, animProps);
+        // angle and outerRadius are functions so cannot animate
+        props.angle = d => d.index * 2 * Math.PI / this.data.length;
+        props.outerRadius = d => {
+            const ratio = d.value / Dimensions.get('window').width;
+            return 50 + 50 * ratio;
+        };
+        delete props.startAngle;
+        delete props.endAngle;
+        props.innerRadius = 0;
+        props.radius = 100;
+        // need to animchildren if 'data'
+        if (animType === 'data') {
+            props.angle = d => d.index * 2 * Math.PI / this.animatedValues.length;
+            props.children = this.animatedValues.map((value, index) => {
+                const data = { index, value };
+                return <D3ShapeData {...data} />;
+            });
+        }
+        return <D3ShapeAreaRadial {...props} />;
+    }
 
     renderText({ type = this.state.type, animType = this.state.animType } = {}) {
         if (type !== 'Text') {
@@ -1076,6 +1147,8 @@ export default class SvgAnimation extends Component {
                         {this.renderD3ShapePie()}
                         {this.renderD3ShapeLine()}
                         {this.renderD3ShapeLineRadial()}
+                        {this.renderD3ShapeArea()}
+                        {this.renderD3ShapeAreaRadial()}
                         {this.renderComponent({ requiredType: 'FlubberPath' })}
                         {this.renderText()}
                         {this.renderTSpan()}
