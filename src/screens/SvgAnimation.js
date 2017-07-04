@@ -105,6 +105,9 @@ const animTypes = {
     RadialGradient: [...radialGradientArgs, ...gradAnimTypes],
 };
 
+// this will test using D3ShapeData component instead of props.data
+const USE_D3_SHAPE_DATA = false;
+
 const styles = StyleSheet.create({
     container: {
         marginTop: 40
@@ -268,7 +271,7 @@ export default class SvgAnimation extends Component {
     }
 
     createNormalProps() {
-        const data = Array(50).fill().map((val, i) => ({ index: i, value: randomNumber(0, 100) }));
+        const data = Array(8).fill().map((val, i) => ({ index: i, value: randomNumber(0, 100) }));
         const transformProps = {
             origin: SvgAnimation.defaultProps.origin,
             skew: SvgAnimation.defaultProps.skew,
@@ -372,25 +375,28 @@ export default class SvgAnimation extends Component {
             stroke: randomColor(),
             strokeWidth: SvgAnimation.defaultProps.strokeWidth,
         };
+        const dataKey = USE_D3_SHAPE_DATA ? 'children' : 'data';
+        const pieDataItemProps = pick(SvgAnimation.defaultProps, d3ShapeArcArgs);
+        // attach random fill so it looks nicer
+        const pieData = data.map((dataItem) => {
+            if (USE_D3_SHAPE_DATA) {
+                return <D3ShapeData fill={randomColor()} {...pieDataItemProps} {...dataItem} />;
+            }
+            return {fill: randomColor(), ...pieDataItemProps, ...dataItem};
+        });
         normalPropsForType.D3ShapePie = {
             ...pick(SvgAnimation.defaultProps, d3ShapeArcArgs),
             translate: SvgAnimation.defaultProps.translate,
-            children: [1, 1, 2, 3, 5, 8, 13, 21].map((value) => {
-                const shapeDataProps = {
-                    ...pick(SvgAnimation.defaultProps, d3ShapeArcArgs),
-                    translate: SvgAnimation.defaultProps.translate,
-                    fill: randomColor(),
-                };
-                return <D3ShapeData value={value} {...shapeDataProps} />;
-            })
+            [dataKey]: pieData
         };
+        const lineAndAreaData = USE_D3_SHAPE_DATA ? data.map((dataItem) => (
+            <D3ShapeData {...dataItem} />
+        )) : data;
         const lineData = {
             translate: SvgAnimation.defaultProps.translate,
             stroke: randomColor(),
             strokeWidth: SvgAnimation.defaultProps.strokeWidth,
-            children: data.map((dataItem) => (
-                <D3ShapeData {...dataItem} />
-            ))
+            [dataKey]: lineAndAreaData
         };
         normalPropsForType.D3ShapeLine = {
             ...pick(SvgAnimation.defaultProps, d3ShapeLineArgs),
@@ -403,9 +409,7 @@ export default class SvgAnimation extends Component {
         const areaData = {
             translate: SvgAnimation.defaultProps.translate,
             fill: randomColor(),
-            children: data.map((dataItem) => (
-                <D3ShapeData {...dataItem} />
-            ))
+            [dataKey]: lineAndAreaData
         };
         normalPropsForType.D3ShapeArea = {
             ...pick(SvgAnimation.defaultProps, d3ShapeAreaArgs),
@@ -736,6 +740,24 @@ export default class SvgAnimation extends Component {
                 props3 = mergeProps(props3, this.animPropsForAnimType.d3pathall);
             }
         }
+        if (type === 'D3ShapePie' && animType === 'data') {
+            const shapeDataProps = {
+                ...pick(SvgAnimation.defaultProps, d3ShapeArcArgs),
+                fill: randomColor()
+            };
+            if (USE_D3_SHAPE_DATA) {
+                props3.children = this.animatedValues.map((value, index) => <D3ShapeData value={value} index={index} {...shapeDataProps} />);
+            } else {
+                props3.data = this.animatedValues.map((value, index) => ({ index, value, ...shapeDataProps }));
+            }
+        }
+        if (['D3ShapeLine', 'D3ShapeLineRadial', 'D3ShapeArea', 'D3ShapeAreaRadial'].includes(type) && animType === 'data') {
+            if (USE_D3_SHAPE_DATA) {
+                props3.children = this.animatedValues.map((value, index) => <D3ShapeData index={index} value={value} />);
+            } else {
+                props3.data = this.animatedValues.map((value, index) => ({ index, value }));
+            }
+        }
         props3 = mergeProps(props, props2, props3);
         // remove translate from getNormalProps if testing other translate animTypes or a type doesn't need to animate it
         if (props3.translate != null && !['translateX', 'translateY'].includes(animType) && !['g', 'use'].includes(type)) {
@@ -776,15 +798,11 @@ export default class SvgAnimation extends Component {
         const normalProps = this.getNormalProps({ type, animType });
         const animProps = this.getAnimProps({ type, animType });
         let props = mergeProps(normalProps, animProps);
+        // value is not a function so cannot animate
+        props.value = d => d.value;
         // need to animchildren if 'data'
         if (animType === 'data') {
-            let shapeDataProps = d3ShapeArcArgs.reduce((acc, arg) => {
-                acc[arg] = SvgAnimation.defaultProps[arg];
-                return acc;
-            }, { fill: randomColor() });
-            props.children = this.animatedValues.map((value) => (
-                <D3ShapeData value={value} {...shapeDataProps} />
-            ));
+            
         }
         return <D3ShapePie {...props } />;
     }
@@ -803,10 +821,6 @@ export default class SvgAnimation extends Component {
         // need to animchildren if 'data'
         if (animType === 'data') {
             props.x = d => d.index * Dimensions.get('window').width / this.animatedValues.length;
-            props.children = this.animatedValues.map((value, index) => {
-                const data = { index, value };
-                return <D3ShapeData {...data} />;
-            });
         }
         return <D3ShapeLine {...props} />;
     }
@@ -828,10 +842,6 @@ export default class SvgAnimation extends Component {
         // need to animchildren if 'data'
         if (animType === 'data') {
             props.angle = d => d.index * 2 * Math.PI / this.animatedValues.length;
-            props.children = this.animatedValues.map((value, index) => {
-                const data = { index, value };
-                return <D3ShapeData {...data} />;
-            });
         }
         return <D3ShapeLineRadial {...props} />;
     }
@@ -852,10 +862,6 @@ export default class SvgAnimation extends Component {
         // need to animchildren if 'data'
         if (animType === 'data') {
             props.x = d => d.index * Dimensions.get('window').width / this.animatedValues.length;
-            props.children = this.animatedValues.map((value, index) => {
-                const data = { index, value };
-                return <D3ShapeData {...data} />;
-            });
         }
         return <D3ShapeArea {...props} />;
     }
@@ -880,10 +886,6 @@ export default class SvgAnimation extends Component {
         // need to animchildren if 'data'
         if (animType === 'data') {
             props.angle = d => d.index * 2 * Math.PI / this.animatedValues.length;
-            props.children = this.animatedValues.map((value, index) => {
-                const data = { index, value };
-                return <D3ShapeData {...data} />;
-            });
         }
         return <D3ShapeAreaRadial {...props} />;
     }

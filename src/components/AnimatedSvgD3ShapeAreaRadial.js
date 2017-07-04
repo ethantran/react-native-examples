@@ -27,12 +27,12 @@ function createPath(generator, data) {
     return generator(data);
 }
 
-class SvgD3ShapeLine extends Component {
+class SvgD3ShapeAreaRadial extends Component {
     constructor(props) {
         super(props);
         this.generator = createGenerator(props);
         this.prevProps = pick(props, args);
-        this.data = this.listenToChildren(props);
+        this.data = props.children && props.children.length ? this.listenToChildren(props) : this.listenToData(props);
         this.d = createPath(this.generator, this.data);
     }
     setNativeProps = (props = {}) => {
@@ -77,18 +77,7 @@ class SvgD3ShapeLine extends Component {
         React.Children.forEach(children, (child) => {
             if (child) {
                 if (child.type === D3ShapeData) {
-                    let dataItem = {};
-                    Object.keys(child.props).reduce((acc, key) => {
-                        const prop = child.props[key];
-                        if (prop instanceof Animated.Value || prop instanceof Animated.Interpolation) {
-                            dataItem[key] = prop.__getValue();
-                            const listener = this.addListenerForAnimatedArgProp(prop, dataIndex, key);
-                            this.listeners.push(listener);
-                        } else {
-                            dataItem[key] = prop;
-                        }
-                        return acc;
-                    }, {});
+                    const dataItem = this.listenToDataItem(child.props, dataIndex);
                     data[dataIndex] = dataItem;
                     dataIndex += 1;
                 }
@@ -96,26 +85,48 @@ class SvgD3ShapeLine extends Component {
         });
         return data;
     }
-    removeAllListeners = ({ children }) => {
+    listenToData = ({ data }) => {
+        this.listeners = [];
+        return data.map((dataItem, index) => this.listenToDataItem(dataItem, index));
+    }
+    listenToDataItem = (props, dataIndex) => {
+        return Object.keys(props).reduce((acc, key) => {
+            const prop = props[key];
+            if (prop instanceof Animated.Value || prop instanceof Animated.Interpolation) {
+                acc[key] = prop.__getValue();
+                const listener = this.addListenerForAnimatedArgProp(prop, dataIndex, key);
+                this.listeners.push(listener);
+            } else {
+                acc[key] = prop;
+            }
+            return acc;
+        }, {});
+    }
+    removeAllListeners = ({ children, data }) => {
         React.Children.forEach(children, (child) => {
             if (child) {
                 if (child.type === D3ShapeData) {
-                    Object.keys(child.props).forEach((key) => {
-                        const prop = child.props[key];
-                        if (prop instanceof Animated.Value) {
-                            this.listeners.forEach(listener => prop.removeListener(listener));
-                        } else if (prop instanceof Animated.Interpolation) {
-                            this.listeners.forEach(listener => prop._parent.removeListener(listener));
-                        }
-                    });
+                    this.removeListeners(child.props);
                 }
             }
         });
+        data.forEach(item => this.removeListeners(item));
         this.listeners = [];
+    }
+    removeListeners = (props) => {
+        Object.keys(props).forEach((key) => {
+            const prop = props[key];
+            if (prop instanceof Animated.Value) {
+                this.listeners.forEach(listener => prop.removeListener(listener));
+            } else if (prop instanceof Animated.Interpolation) {
+                this.listeners.forEach(listener => prop._parent.removeListener(listener));
+            }
+        });
     }
     shouldComponentUpdate(nextProps) {
         const argChanged = args.some((key, index) => nextProps[key] !== this.props[key]);
         const childrenChanged = nextProps.children !== this.props.children;
+        const dataChanged = nextProps.children !== this.props.children;
         if (argChanged) {
             this.generator = createGenerator(nextProps);
         }
@@ -123,7 +134,11 @@ class SvgD3ShapeLine extends Component {
             this.removeAllListeners(this.props);
             this.data = this.listenToChildren(nextProps);
         }
-        return argChanged || childrenChanged;
+        if (dataChanged) {
+            this.removeAllListeners(this.props);
+            this.data = this.listenToData(nextProps);
+        }
+        return argChanged || childrenChanged || dataChanged;
     }
     componentWillUnmount() {
         this.removeAllListeners(this.props);
@@ -139,5 +154,5 @@ class SvgD3ShapeLine extends Component {
         );
     }
 }
-SvgD3ShapeLine = AnimatedSvgFix(SvgD3ShapeLine);
-export default SvgD3ShapeLine;
+SvgD3ShapeAreaRadial = AnimatedSvgFix(SvgD3ShapeAreaRadial);
+export default SvgD3ShapeAreaRadial;

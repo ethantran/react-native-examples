@@ -9,12 +9,17 @@ import AnimatedSvgFix from './AnimatedSvgFix';
 import D3ShapeData from './D3ShapeData';
 import D3ShapeArc from './AnimatedSvgD3ShapeArc';
 
-const NativeSvgPath = Svg.Path;
-
-export const args = ['startAngle', 'endAngle', 'padAngle'];
+export const args = ['value', 'sort', 'sortValues', 'startAngle', 'endAngle', 'padAngle'];
 
 function createGenerator(props) {
-    return d3.pie(pick(props, args));
+    let gen = d3.pie();
+    return args.reduce((acc, arg) => {
+        const prop = props[arg];
+        if (prop) {
+            return acc[arg](props[arg]);
+        }
+        return acc;
+    }, gen);
 }
 
 function getArcData(generator, data) {
@@ -26,8 +31,8 @@ class SvgD3ShapePie extends Component {
         super(props);
         this.generator = createGenerator(props);
         this.prevProps = pick(props, args);
-        this.data = this.listenToChildren(props);
-        this.arcData = getArcData(this.generator, this.data.values);
+        this.data = props.children && props.children.length ? this.listenToChildren(props) : this.listenToData(props);
+        this.arcData = getArcData(this.generator, this.data);
         this._components = [];
     }
     setNativeProps = (props = {}) => {
@@ -36,7 +41,7 @@ class SvgD3ShapePie extends Component {
             this.generator = createGenerator(props);
         }
         if (argChanged || props.updateD3Shape) {
-            this.arcData = getArcData(this.generator, this.data.values);
+            this.arcData = getArcData(this.generator, this.data);
             this.arcData.forEach((arcData, i) => {
                 this._components[arcData.index] && this._components[arcData.index].setNativeProps(arcData);
             });
@@ -44,12 +49,16 @@ class SvgD3ShapePie extends Component {
         }
         this._component && this._component.setNativeProps(props);
     }
-    updateDataValue = (dataIndex, value) => {
-        let newData = [...this.data.values];
-        newData[dataIndex] = value;
+    updateDataItemProp = (dataIndex, propKey, value) => {
+        let newData = [...this.data];
+        let newDataItem = {
+            ...newData[dataIndex],
+            [propKey]: value
+        };
+        newData[dataIndex] = newDataItem;
         return newData;
     }
-    addListenerForAnimatedArgProp = (prop, dataIndex) => {
+    addListenerForAnimatedArgProp = (prop, dataIndex, propKey) => {
         const addListener = prop._parent ? prop._parent.addListener.bind(prop._parent) : prop.addListener.bind(prop);
         const interpolator = prop._interpolation;
         let callback = e => e;
@@ -59,55 +68,68 @@ class SvgD3ShapePie extends Component {
         let prevCallback = callback;
         callback = e => {
             const value = prevCallback(e.value);
-            this.data.values = this.updateDataValue(dataIndex, value);
+            this.data = this.updateDataItemProp(dataIndex, propKey, value);
             this.setNativeProps({ updateD3Shape: true });
         };
         return addListener(callback);
     }
     listenToChildren = ({ children }) => {
         this.listeners = [];
-        let dataValues = [];
-        let dataProps = [];
+        let data = [];
         let dataIndex = 0;
-        React.Children.forEach(children, (child, i) => {
+        React.Children.forEach(children, (child) => {
             if (child) {
                 if (child.type === D3ShapeData) {
-                    const { value: prop, ...rest } = child.props;
-                    dataProps[dataIndex] = rest;
-                    if (prop instanceof Animated.Value || prop instanceof Animated.Interpolation) {
-                        dataValues[dataIndex] = prop.__getValue();
-                        const listener = this.addListenerForAnimatedArgProp(prop, dataIndex);
-                        this.listeners.push(listener);
-                    } else {
-                        dataValues[dataIndex] = prop;
-                    }
+                    const dataItem = this.listenToDataItem(child.props, dataIndex);
+                    data[dataIndex] = dataItem;
                     dataIndex += 1;
                 }
             }
         });
-        return {
-            values: dataValues,
-            props: dataProps
-        };
+        return data;
     }
-    removeAllListeners = ({ children }) => {
+    listenToData = ({ data }) => {
+        this.listeners = [];
+        return data.map((dataItem, index) => this.listenToDataItem(dataItem, index));
+    }
+    listenToDataItem = (props, dataIndex) => {
+        return Object.keys(props).reduce((acc, key) => {
+            const prop = props[key];
+            if (prop instanceof Animated.Value || prop instanceof Animated.Interpolation) {
+                acc[key] = prop.__getValue();
+                const listener = this.addListenerForAnimatedArgProp(prop, dataIndex, key);
+                this.listeners.push(listener);
+            } else {
+                acc[key] = prop;
+            }
+            return acc;
+        }, {});
+    }
+    removeAllListeners = ({ children, data }) => {
         React.Children.forEach(children, (child) => {
             if (child) {
                 if (child.type === D3ShapeData) {
-                    const prop = child.props.value;
-                    if (prop instanceof Animated.Value) {
-                        this.listeners.forEach(listener => prop.removeListener(listener));
-                    } else if (prop instanceof Animated.Interpolation) {
-                        this.listeners.forEach(listener => prop._parent.removeListener(listener));
-                    }
+                    this.removeListeners(child.props);
                 }
             }
         });
+        data.forEach(item => this.removeListeners(item));
         this.listeners = [];
+    }
+    removeListeners = (props) => {
+        Object.keys(props).forEach((key) => {
+            const prop = props[key];
+            if (prop instanceof Animated.Value) {
+                this.listeners.forEach(listener => prop.removeListener(listener));
+            } else if (prop instanceof Animated.Interpolation) {
+                this.listeners.forEach(listener => prop._parent.removeListener(listener));
+            }
+        });
     }
     shouldComponentUpdate(nextProps) {
         const argChanged = args.some((key, index) => nextProps[key] !== this.props[key]);
         const childrenChanged = nextProps.children !== this.props.children;
+        const dataChanged = nextProps.children !== this.props.children;
         if (argChanged) {
             this.generator = createGenerator(nextProps);
         }
@@ -115,7 +137,11 @@ class SvgD3ShapePie extends Component {
             this.removeAllListeners(this.props);
             this.data = this.listenToChildren(nextProps);
         }
-        return argChanged || childrenChanged;
+        if (dataChanged) {
+            this.removeAllListeners(this.props);
+            this.data = this.listenToData(nextProps);
+        }
+        return argChanged || childrenChanged || dataChanged;
     }
     componentWillUnmount() {
         this.removeAllListeners(this.props);
@@ -131,7 +157,7 @@ class SvgD3ShapePie extends Component {
                         <D3ShapeArc
                             key={arcData.index}
                             ref={component => (this._components[arcData.index] = component)}
-                            {...this.data.props[arcData.index]}
+                            {...this.data[arcData.index]}
                             {...arcData}
                         />
                     );
