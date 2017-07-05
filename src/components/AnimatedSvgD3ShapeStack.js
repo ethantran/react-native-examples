@@ -22,17 +22,21 @@ function createGenerator(props) {
     }, gen);
 }
 
-function getAreaData(generator, data) {
+function getElementData(generator, data) {
     return generator(data);
 }
 
 class SvgD3ShapeLine extends Component {
+    static defaultProps = {
+        elementProps: () => ({}),
+        renderElement: () => null
+    }
     constructor(props) {
         super(props);
         this.generator = createGenerator(props);
         this.prevProps = pick(props, args);
         this.data = props.children && props.children.length ? this.listenToChildren(props) : this.listenToData(props);
-        this.areaData = getAreaData(this.generator, this.data.items);
+        this.elementData = getElementData(this.generator, this.data);
         this._components = [];
     }
     setNativeProps = (props = {}) => {
@@ -41,16 +45,16 @@ class SvgD3ShapeLine extends Component {
             this.generator = createGenerator(props);
         }
         if (argChanged || props.updateD3Shape) {
-            this.areaData = getAreaData(this.generator, this.data.items);
-            this.areaData.forEach((dataItem, i) => {
-                this._components[i].setNativeProps({ data: dataItem, ...this.data.props[i]});
+            this.elementData = getElementData(this.generator, this.data);
+            this.elementData.forEach((element, i) => {
+                this._components[i].setNativeProps({ data: element });
             });
             this.prevProps = Object.assign(this.prevProps, pick(props, args));
         }
         this._component && this._component.setNativeProps(props);
     }
     updateDataItemProp = (dataIndex, propKey, value) => {
-        let newData = [...this.data.items];
+        let newData = [...this.data];
         let newDataItem = {
             ...newData[dataIndex],
             [propKey]: value
@@ -68,53 +72,42 @@ class SvgD3ShapeLine extends Component {
         let prevCallback = callback;
         callback = e => {
             const value = prevCallback(e.value);
-            this.data.items = this.updateDataItemProp(dataIndex, propKey, value);
+            this.data = this.updateDataItemProp(dataIndex, propKey, value);
             this.setNativeProps({ updateD3Shape: true });
         };
         return addListener(callback);
     }
-    listenToChildren = ({ children, keys }) => {
+    listenToChildren = ({ children }) => {
         this.listeners = [];
-        let data = { items: [], props: [] };
+        let data = [];
         let dataIndex = 0;
         React.Children.forEach(children, (child) => {
             if (child) {
                 if (child.type === D3ShapeData) {
-                    const result = this.listenToDataItem(child.props, keys, dataIndex);
-                    data.items[dataIndex] = result.items;
-                    data.props[dataIndex] = result.props;
+                    const dataItem = this.listenToDataItem(child.props, dataIndex);
+                    data[dataIndex] = dataItem;
                     dataIndex += 1;
                 }
             }
         });
         return data;
     }
-    listenToData = ({ data, keys }) => {
+    listenToData = ({ data }) => {
         this.listeners = [];
-        return data.reduce((acc, dataItem, index) => {
-            const result = this.listenToDataItem(dataItem, keys, index);
-            acc.items[index] = result.items;
-            acc.props[index] = result.props;
-            return acc;
-        }, { items: [], props: [] });
+        return data.map((dataItem, index) => this.listenToDataItem(dataItem, index));
     }
-    listenToDataItem = (props, keys, dataIndex) => {
-        const pickedProps = pick(props, [...keys, 'index']);
-        const restProps = omit(props, keys);
-        return Object.keys(pickedProps).reduce((acc, key) => {
+    listenToDataItem = (props, dataIndex) => {
+        return Object.keys(props).reduce((acc, key) => {
             const prop = props[key];
             if (prop instanceof Animated.Value || prop instanceof Animated.Interpolation) {
-                acc.items[key] = prop.__getValue();
+                acc[key] = prop.__getValue();
                 const listener = this.addListenerForAnimatedArgProp(prop, dataIndex, key);
                 this.listeners.push(listener);
             } else {
-                acc.items[key] = prop;
+                acc[key] = prop;
             }
             return acc;
-        }, {
-            items: [],
-            props: restProps
-        });
+        }, {});
     }
     removeAllListeners = ({ children, data }) => {
         React.Children.forEach(children, (child) => {
@@ -163,15 +156,12 @@ class SvgD3ShapeLine extends Component {
             <Svg.G
                 ref={component => (this._component = component)}
                 {...filteredProps}>
-                {this.areaData.map((areaDataItem, i) => {
-                    return (
-                        <D3ShapeArea
-                            key={i}
-                            ref={component => (this._components[i] = component)}
-                            data={areaDataItem}
-                            {...this.data.props[i]}
-                        />
-                    );
+                {this.elementData.map((element, i) => {
+                    const child = this.props.renderElement(element, i);
+                    const extraProps = {
+                        ref: component => (this._components[i] = component)
+                    };
+                    return React.cloneElement(child, extraProps);
                 })}
             </Svg.G>
         );

@@ -3,6 +3,8 @@ import { StyleSheet, View, Text, ScrollView, Animated, Dimensions, Button } from
 import loremipsum from 'lorem-ipsum-react-native';
 import { Svg as NativeSvg } from 'expo';
 import pick from 'lodash/pick';
+import * as d3Scale from 'd3-scale';
+import * as d3Array from 'd3-array';
 const Defs = NativeSvg.Defs;
 
 import randomColor from '../randomColor';
@@ -393,7 +395,7 @@ export default class SvgAnimation extends Component {
             [dataKey]: pieData
         };
         const lineAndAreaData = USE_D3_SHAPE_DATA ? data.map((dataItem) => <D3ShapeData {...dataItem} />) : data;
-        const lineData = {
+        const lineProps = {
             translate: SvgAnimation.defaultProps.translate,
             stroke: randomColor(),
             strokeWidth: SvgAnimation.defaultProps.strokeWidth,
@@ -401,37 +403,47 @@ export default class SvgAnimation extends Component {
         };
         normalPropsForType.D3ShapeLine = {
             ...pick(SvgAnimation.defaultProps, d3ShapeLineArgs),
-            ...lineData
+            ...lineProps
         };
         normalPropsForType.D3ShapeLineRadial = {
             ...pick(SvgAnimation.defaultProps, d3ShapeLineRadialArgs),
-            ...lineData
+            ...lineProps
         };
-        const areaData = {
+        const areaProps = {
             translate: SvgAnimation.defaultProps.translate,
             fill: randomColor(),
             [dataKey]: lineAndAreaData
         };
         normalPropsForType.D3ShapeArea = {
             ...pick(SvgAnimation.defaultProps, d3ShapeAreaArgs),
-            ...areaData
+            ...areaProps
         };
         normalPropsForType.D3ShapeAreaRadial = {
             ...pick(SvgAnimation.defaultProps, d3ShapeAreaRadialArgs),
-            ...areaData
+            ...areaProps
         };
-        const stackData = {
-            [dataKey]: [
-                { index: 0, apples: 3840, bananas: 1920, cherries: 960, dates: 400, fill: randomColor() },
-                { index: 1, apples: 1600, bananas: 1440, cherries: 960, dates: 400, fill: randomColor() },
-                { index: 2, apples: 640, bananas: 960, cherries: 640, dates: 400, fill: randomColor() },
-                { index: 3, apples: 320, bananas: 480, cherries: 640, dates: 400, fill: randomColor() }
-            ].map((dataItem) => USE_D3_SHAPE_DATA ? <D3ShapeData {...dataItem} /> : dataItem)
+        const stackDataKeys = ['apples', 'bananas', 'cherries', 'dates'];
+        let stackData = [
+            { index: 0, apples: 3840, bananas: 1920, cherries: 960, dates: 400 },
+            { index: 1, apples: 1600, bananas: 1440, cherries: 960, dates: 400 },
+            { index: 2, apples: 640, bananas: 960, cherries: 640, dates: 400 },
+            { index: 3, apples: 320, bananas: 480, cherries: 640, dates: 400 }
+        ];
+        // generate total for each row
+        stackData.reduce((acc, row, index) => {
+            row.total = 0;
+            stackDataKeys.forEach(key => {
+                row.total += row[key];
+            });
+            return stackData;
+        }, stackData);
+        const stackProps = {
+            [dataKey]: stackData.map((dataItem) => USE_D3_SHAPE_DATA ? <D3ShapeData {...dataItem} /> : dataItem),
+            keys: stackDataKeys,
         };
         normalPropsForType.D3ShapeStack = {
             ...pick(SvgAnimation.defaultProps, d3ShapeStackArgs),
-            ...stackData,
-            keys: ['apples', 'bananas', 'cherries', 'dates'],
+            ...stackProps
         };
         let normalPropsForAnimType = {
             stroke: {
@@ -485,6 +497,7 @@ export default class SvgAnimation extends Component {
             options: { single: true, match: true }
         };
         this.data = data;
+        this.stackData = stackData;
         this.regularCommands = regularCommands;
         this.normalPropsForType = normalPropsForType;
         this.normalPropsForAnimType = normalPropsForAnimType;
@@ -913,10 +926,44 @@ export default class SvgAnimation extends Component {
         let props = mergeProps(normalProps, animProps);
         // remove props that cannot be animated
         delete props.offset;
-        if (animType === 'data') {
-
-        }
-        return <D3ShapeStack {...props } />;
+        // props for each element
+        const { width, height } = Dimensions.get('window');
+        // scale
+        let x = d3Scale.scaleBand()
+            .rangeRound([0, width / 2])
+            .paddingInner(0.05)
+            .align(0.1);
+        let y = d3Scale.scaleLinear()
+            .rangeRound([height / 2, 0]);
+        let z = d3Scale.scaleOrdinal()
+            .range(['green', 'yellow', 'red', 'brown']);
+        // attach domain
+        x.domain(this.stackData.map(d => d.index));
+        y.domain([0, d3Array.max(this.stackData, d => d.total)]).nice();
+        z.domain(props.keys);
+        delete props.translate;
+        return <D3ShapeStack
+            {...props}
+            renderElement={(element, i) => {
+                const key = props.keys[i];
+                return (
+                    <G key={i}>
+                        {element.map((d, j) => {
+                            return (
+                                <Rect
+                                    key={j}
+                                    x={x(d.data.index)}
+                                    y={y(d[1])}
+                                    height={y(d[0]) - y(d[1])}
+                                    width={x.bandwidth()}
+                                    fill={z(key)}
+                                />
+                            );
+                        })}
+                    </G>
+                );
+            }}
+        />;
     }
 
     renderText({ type = this.state.type, animType = this.state.animType } = {}) {
