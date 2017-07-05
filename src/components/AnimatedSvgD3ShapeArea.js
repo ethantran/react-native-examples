@@ -90,7 +90,7 @@ class SvgD3ShapeArea extends Component {
     }
     listenToData = ({ data }) => {
         this.listeners = [];
-        return data.map((dataItem, index) => this.listenToDataItem(dataItem, index));
+        return data.map(this.listenToDataItem);
     }
     listenToDataItem = (props, dataIndex) => {
         return Object.keys(props).reduce((acc, key) => {
@@ -113,7 +113,7 @@ class SvgD3ShapeArea extends Component {
                 }
             }
         });
-        data.forEach(item => this.removeListeners(item));
+        data.forEach(this.removeListeners);
         this.listeners = [];
     }
     removeListeners = (props) => {

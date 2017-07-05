@@ -5,6 +5,7 @@ import { Svg as NativeSvg } from 'expo';
 import pick from 'lodash/pick';
 import * as d3Scale from 'd3-scale';
 import * as d3Array from 'd3-array';
+import { svgPathProperties } from 'svg-path-properties';
 const Defs = NativeSvg.Defs;
 
 import randomColor from '../randomColor';
@@ -19,6 +20,7 @@ import Ellipse, { args as ellipseArgs } from '../components/AnimatedSvgEllipse';
 import Line, { args as lineArgs } from '../components/AnimatedSvgLine';
 import Polygon from '../components/AnimatedSvgPolygon';
 import Polyline from '../components/AnimatedSvgPolyline';
+import Path from '../components/AnimatedSvgPath';
 import D3Path, { argsForCommand as d3PathArgsForCommand } from '../components/AnimatedSvgD3Path';
 import D3InterpolatePath from '../components/AnimatedSvgD3InterpolatePath';
 import D3ShapeArc, { args as d3ShapeArcArgs } from '../components/AnimatedSvgD3ShapeArc';
@@ -39,7 +41,7 @@ import RadialGradient, { args as radialGradientArgs } from '../components/Animat
 import Stop from '../components/AnimatedSvgStop';
 import D3PathCommand from '../components/D3PathCommand';
 import D3ShapeData from '../components/D3ShapeData';
-import StrokeDasharray from '../components/AnimatedSvgStrokeDasharray';
+import VivusHi from '../components/VivusHi';
 
 const componentsForType = {
     Circle,
@@ -48,6 +50,7 @@ const componentsForType = {
     Line,
     Polygon,
     Polyline,
+    Path,
     D3Path,
     D3InterpolatePath,
     D3ShapeArc,
@@ -90,7 +93,7 @@ const animTypes = {
     Line: lineAnimTypes,
     Polygon: shapeAnimTypes,
     Polyline: shapeAnimTypes,
-    Path: shapeAnimTypes,
+    Path: ['drawpath', ...shapeAnimTypes],
     D3Path: [...d3PathCommands, ...shapeAnimTypes],
     D3InterpolatePath: shapeAnimTypes,
     D3ShapeArc: [...d3ShapeArcArgs, ...shapeAnimTypes],
@@ -459,11 +462,7 @@ export default class SvgAnimation extends Component {
             strokeDashoffset: {
                 stroke: randomColor(),
                 strokeWidth: SvgAnimation.defaultProps.strokeWidth,
-                children: [
-                    <StrokeDasharray value={randomNumber(1, 15)} />,
-                    <StrokeDasharray value={randomNumber(1, 15)} />,
-                    <StrokeDasharray value={randomNumber(1, 15)} />
-                ]
+                strokeDasharray: Array(3).fill().map(() => randomNumber(1, 15))
             },
             strokeDasharray: {
                 stroke: randomColor(),
@@ -562,18 +561,18 @@ export default class SvgAnimation extends Component {
                 dy2: this.dy2
             },
             strokeDasharray: {
-                children: [
-                    <StrokeDasharray key="1" value={this.strokeDasharray0} />,
-                    <StrokeDasharray key="2" value={this.strokeDasharray1} />,
-                    <StrokeDasharray key="3" value={this.strokeDasharray2} />
+                strokeDasharray: [
+                    this.strokeDasharray0,
+                    this.strokeDasharray1,
+                    this.strokeDasharray2
                 ]
             },
             'strokeDasharray+strokeDashoffset': {
                 strokeDashoffset: this.strokeDashoffset,
-                children: [
-                    <StrokeDasharray value={this.strokeDasharray0} />,
-                    <StrokeDasharray value={this.strokeDasharray1} />,
-                    <StrokeDasharray value={this.strokeDasharray2} />
+                strokeDasharray: [
+                    this.strokeDasharray0,
+                    this.strokeDasharray1,
+                    this.strokeDasharray2
                 ]
             }
         };
@@ -1137,6 +1136,20 @@ export default class SvgAnimation extends Component {
         );
     }
 
+    renderDrawPath({ type = this.state.type, animType = this.state.animType } = {}) {
+        if (type !== 'path' && animType !== 'drawpath') {
+            return null;
+        }
+        const properties = svgPathProperties(VivusHi);
+        const length = properties.getTotalLength();
+        const sdo = new Animated.Value(length);
+        Animated.sequence([
+            Animated.delay(1000),
+            Animated.timing(sdo, { toValue: 0, duration: 2000 })
+        ]).start();
+        return <Path d={VivusHi} fill="none" stroke={randomColor()} strokeDashoffset={sdo} strokeDasharray={[length, length]}/>;
+    }
+
     renderTypeButton = (type, i) => (
         <Button
             key={i}
@@ -1234,6 +1247,7 @@ export default class SvgAnimation extends Component {
                         {this.renderTextPath()}
                         {this.renderG()}
                         {this.renderUse()}
+                        {this.renderDrawPath()}
                         {(type === 'LinearGradient' || type === 'RadialGradient') && (
                             <Ellipse cx="150" cy="75" rx="85" ry="55" fill="url(#grad)" />
                         )}
