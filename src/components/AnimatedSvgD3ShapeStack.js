@@ -7,19 +7,18 @@ import omit from 'lodash/omit';
 
 import AnimatedSvgFix from './AnimatedSvgFix';
 import D3ShapeData from './D3ShapeData';
-import D3ShapeArea from './AnimatedSvgD3ShapeArea';
 
 export const args = ['keys', 'value', 'order', 'offset'];
 
-function createGenerator(props) {
-    let gen = d3.stack();
+function createGenerator(props, generator) {
+    generator = generator || d3.stack();
     return args.reduce((acc, arg) => {
         const prop = props[arg];
         if (prop) {
             return acc[arg](props[arg]);
         }
         return acc;
-    }, gen);
+    }, generator);
 }
 
 function getElementData(generator, data) {
@@ -34,7 +33,6 @@ class SvgD3ShapeLine extends Component {
     constructor(props) {
         super(props);
         this.generator = createGenerator(props);
-        this.prevProps = pick(props, args);
         this.data = props.children && props.children.length ? this.listenToChildren(props) : this.listenToData(props);
         this.elementData = getElementData(this.generator, this.data);
         this._components = [];
@@ -42,14 +40,13 @@ class SvgD3ShapeLine extends Component {
     setNativeProps = (props = {}) => {
         const argChanged = args.some((key, index) => props[key] != null);
         if (argChanged) {
-            this.generator = createGenerator(props);
+            this.generator = createGenerator(props, this.generator);
         }
         if (argChanged || props.updateD3Shape) {
             this.elementData = getElementData(this.generator, this.data);
             this.elementData.forEach((element, i) => {
                 this._components[i].setNativeProps({ data: element });
             });
-            this.prevProps = Object.assign(this.prevProps, pick(props, args));
         }
         this._component && this._component.setNativeProps(props);
     }
@@ -135,7 +132,7 @@ class SvgD3ShapeLine extends Component {
         const childrenChanged = nextProps.children !== this.props.children;
         const dataChanged = nextProps.data !== this.props.data;
         if (argChanged) {
-            this.generator = createGenerator(nextProps);
+            this.generator = createGenerator(nextProps, this.generator);
         }
         if (childrenChanged) {
             this.removeAllListeners(this.props);

@@ -11,15 +11,15 @@ import D3ShapeArc from './AnimatedSvgD3ShapeArc';
 
 export const args = ['value', 'sort', 'sortValues', 'startAngle', 'endAngle', 'padAngle'];
 
-function createGenerator(props) {
-    let gen = d3.pie();
+function createGenerator(props, generator) {
+    generator = generator || d3.pie();
     return args.reduce((acc, arg) => {
         const prop = props[arg];
         if (prop) {
             return acc[arg](props[arg]);
         }
         return acc;
-    }, gen);
+    }, generator);
 }
 
 function getArcData(generator, data) {
@@ -30,7 +30,6 @@ class SvgD3ShapePie extends Component {
     constructor(props) {
         super(props);
         this.generator = createGenerator(props);
-        this.prevProps = pick(props, args);
         this.data = props.children && props.children.length ? this.listenToChildren(props) : this.listenToData(props);
         this.arcData = getArcData(this.generator, this.data);
         this._components = [];
@@ -38,14 +37,13 @@ class SvgD3ShapePie extends Component {
     setNativeProps = (props = {}) => {
         const argChanged = args.some((key, index) => props[key] != null);
         if (argChanged) {
-            this.generator = createGenerator(props);
+            this.generator = createGenerator(props, this.generator);
         }
         if (argChanged || props.updateD3Shape) {
             this.arcData = getArcData(this.generator, this.data);
             this.arcData.forEach((arcData, i) => {
                 this._components[arcData.index] && this._components[arcData.index].setNativeProps(arcData);
             });
-            this.prevProps = Object.assign(this.prevProps, pick(props, args));
         }
         this._component && this._component.setNativeProps(props);
     }
@@ -131,7 +129,7 @@ class SvgD3ShapePie extends Component {
         const childrenChanged = nextProps.children !== this.props.children;
         const dataChanged = nextProps.data !== this.props.data;
         if (argChanged) {
-            this.generator = createGenerator(nextProps);
+            this.generator = createGenerator(nextProps, this.generator);
         }
         if (childrenChanged) {
             this.removeAllListeners(this.props);

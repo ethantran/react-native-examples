@@ -12,15 +12,15 @@ const NativeSvgPath = Svg.Path;
 
 export const args = ['x', 'y', 'defined', 'curve'];
 
-function createGenerator(props) {
-    let gen = d3.line();
+function createGenerator(props, generator) {
+    generator = generator || d3.line();
     return args.reduce((acc, arg) => {
         const prop = props[arg];
         if (prop) {
             return acc[arg](props[arg]);
         }
         return acc;
-    }, gen);
+    }, generator);
 }
 
 function createPath(generator, data) {
@@ -31,15 +31,13 @@ class SvgD3ShapeLine extends Component {
     constructor(props) {
         super(props);
         this.generator = createGenerator(props);
-        this.prevProps = pick(props, args);
         this.data = props.children && props.children.length ? this.listenToChildren(props) : this.listenToData(props);
         this.d = createPath(this.generator, this.data);
     }
     setNativeProps = (props = {}) => {
         const argChanged = args.some((key, index) => props[key] != null);
         if (argChanged) {
-            this.generator = createGenerator(props);
-            this.prevProps = Object.assign(this.prevProps, pick(props, args));
+            this.generator = createGenerator(props, this.generator);
         }
         if (argChanged || props.updateD3Shape) {
             props.d = createPath(this.generator, this.data);
@@ -128,7 +126,7 @@ class SvgD3ShapeLine extends Component {
         const childrenChanged = nextProps.children !== this.props.children;
         const dataChanged = nextProps.data !== this.props.data;
         if (argChanged) {
-            this.generator = createGenerator(nextProps);
+            this.generator = createGenerator(nextProps, this.generator);
         }
         if (childrenChanged) {
             this.removeAllListeners(this.props);

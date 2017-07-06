@@ -11,35 +11,39 @@ const NativeSvgPath = Svg.Path;
 
 export const args = ['innerRadius', 'outerRadius', 'startAngle', 'endAngle', 'centroid', 'cornerRadius', 'padAngle', 'padRadius'];
 
-function createGenerator(props) {
-    return d3.arc(pick(props, args));
+function createGenerator(props, generator) {
+    generator = generator || d3.arc();
+    return args.reduce((acc, arg) => {
+        const prop = props[arg];
+        if (prop) {
+            return acc[arg](props[arg]);
+        }
+        return acc;
+    }, generator);
 }
 
-function createPath(generator, props, prevProps) {
-    return generator({
-        ...prevProps,
-        ...pick(props, args)
-    });
+function createPath(generator, props) {
+    return generator(pick(props, args));
 }
 
 class SvgD3ShapeArc extends Component {
     constructor(props) {
         super(props);
         this.generator = createGenerator(props);
-        this.prevProps = pick(props, args);
-        this.d = createPath(this.generator, this.props, this.prevProps);
+        this.d = createPath(this.generator, pick(props, args));
     }
     setNativeProps = (props = {}) => {
-        if (args.some((key, index) => props[key] != null)) {
-            props.d = createPath(this.generator, props, this.prevProps);
-            this.prevProps = Object.assign(this.prevProps, pick(props, args));
+        const argChanged = args.some((key, index) => props[key] != null);
+        if (argChanged) {
+            this.generator = createGenerator(props, this.generator);
+            props.d = createPath(this.generator, pick(props, args));
         }
         this._component && this._component.setNativeProps(props);
     }
     shouldComponentUpdate(nextProps) {
         const argChanged = args.some((key, index) => nextProps[key] !== this.props[key]);
         if (argChanged) {
-            this.d = createPath(this.generator, this.props, this.prevProps);
+            this.d = createPath(this.generator, pick(nextProps, args));
         }
         return argChanged;
     }
