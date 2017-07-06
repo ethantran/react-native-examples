@@ -802,12 +802,15 @@ export default class SvgAnimation extends Component {
         const props = this.animPropsForType[type] || {};
         const props2 = this.animPropsForAnimType[animType] || {};
         let props3 = {};
+
         if (this[animType]) {
             props3[animType] = this[animType];
         }
+
         if (animType === 'none') {
             return {};
         }
+
         if (animType === 'defaultProps') {
             props3 = {};
             const normalProps = this.getNormalProps({ type, animType });
@@ -823,6 +826,7 @@ export default class SvgAnimation extends Component {
                 props3 = mergeProps(props3, this.animPropsForAnimType.d3pathall);
             }
         }
+
         if (type === 'D3ShapePie' && animType === 'data') {
             const shapeDataProps = {
                 ...pick(SvgAnimation.defaultProps, d3ShapeArcArgs),
@@ -834,6 +838,7 @@ export default class SvgAnimation extends Component {
                 props3.data = this.animatedValues.map((value, index) => ({ index, value, ...shapeDataProps }));
             }
         }
+        
         if (['D3ShapeLine', 'D3ShapeLineRadial', 'D3ShapeArea', 'D3ShapeAreaRadial'].includes(type) && animType === 'data') {
             if (USE_D3_SHAPE_DATA) {
                 props3.children = this.animatedValues.map((value, index) => <D3ShapeData index={index} value={value} />);
@@ -841,6 +846,18 @@ export default class SvgAnimation extends Component {
                 props3.data = this.animatedValues.map((value, index) => ({ index, value }));
             }
         }
+
+        if (type === 'D3Chord' && animType === 'data') {
+            let k = 0;
+            props3.matrix = Array(4).fill().map((_, i) => {
+                return Array(4).fill().map((__, j) => {
+                    let result = this.animatedValues[k];
+                    k++;
+                    return result;
+                });
+            });
+        }
+
         props3 = mergeProps(props, props2, props3);
         // remove translate from getNormalProps if testing other translate animTypes or a type doesn't need to animate it
         if (props3.translate != null && !['translateX', 'translateY'].includes(animType) && !['g', 'use'].includes(type)) {
@@ -857,7 +874,6 @@ export default class SvgAnimation extends Component {
         const normalProps = this.getNormalProps({ type, animType });
         const animProps = this.getAnimProps({ type, animType });
         const props = mergeProps(normalProps, animProps);
-        console.log(props)
         return <ComponentForType {...props} />;
     }
 
