@@ -53,6 +53,13 @@ const componentsForType = {
     Polygon,
     Polyline,
     Path,
+    Text,
+    TSpan,
+    TextPath,
+    G,
+    Use,
+    LinearGradient,
+    RadialGradient,
     D3Path,
     D3InterpolatePath,
     D3ShapeArc,
@@ -65,13 +72,6 @@ const componentsForType = {
     D3Chord,
     D3Ribbon,
     FlubberPath,
-    Text,
-    TSpan,
-    TextPath,
-    G,
-    Use,
-    LinearGradient,
-    RadialGradient,
 };
 const types = Object.keys(componentsForType);
 const transformAnimTypes = [
