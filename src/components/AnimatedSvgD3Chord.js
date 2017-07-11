@@ -81,7 +81,7 @@ class SvgD3Chord extends Component {
             this.generator = createGenerator(nextProps, this.generator);
         }
         if (matrixChanged) {
-            removeListeners(this.matrix.listeners, this.props.matrix);
+            removeListeners(this.matrix);
             this.matrix = listen(nextProps.matrix, _ =>
                 this.setNativeProps({ _listener: true })
             );
@@ -89,7 +89,7 @@ class SvgD3Chord extends Component {
         return argChanged || matrixChanged;
     }
     componentWillUnmount() {
-        removeListeners(this.matrix.listeners, this.props.matrix);
+        removeListeners(this.matrix);
     }
     render() {
         const filteredProps = omit(this.props, args);

@@ -80,7 +80,7 @@ class SvgD3ShapeLine extends Component {
             this.generator = createGenerator(nextProps, this.generator);
         }
         if (dataChanged) {
-            removeListeners(this.data.listeners, this.props.data);
+            removeListeners(this.data);
             this.data = listen(nextProps.data, _ =>
                 this.setNativeProps({ _listener: true })
             );
@@ -88,7 +88,7 @@ class SvgD3ShapeLine extends Component {
         return argChanged || dataChanged;
     }
     componentWillUnmount() {
-        removeListeners(this.data.listeners, this.props.data);
+        removeListeners(this.data);
     }
     render() {
         const filteredProps = omit(this.props, args);

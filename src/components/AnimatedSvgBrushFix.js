@@ -4,7 +4,6 @@
  * Solution: Extract brush, update propList (does not seem to do anything but to be consistent extractProps I did it anyway)
  */
 import React, { Component } from 'react';
-import { Animated } from 'react-native';
 import Color from 'color';
 import pick from 'lodash/pick';
 
@@ -82,6 +81,7 @@ const KEYS = ['fill', 'stroke', 'strokeDashoffset'];
 
 export default function SvgBrushFix(WrappedComponent) {
     return class extends Component {
+        strokeDasharray: AnimatedListener;
         constructor(props) {
             super(props);
             this.updateCache(props);
@@ -114,20 +114,14 @@ export default function SvgBrushFix(WrappedComponent) {
         componentWillReceiveProps(nextProps) {
             this.updateCache(nextProps);
             if (nextProps.children !== this.props.children) {
-                removeListeners(
-                    this.strokeDasharray.listeners,
-                    this.props.strokeDasharray
-                );
+                removeListeners(this.strokeDasharray);
                 this.strokeDasharray = listen(nextProps.strokeDasharray, _ =>
                     this.setNativeProps({ updateStrokeDasharray: true })
                 );
             }
         }
         componentWillUnmount() {
-            removeListeners(
-                this.strokeDasharray.listeners,
-                this.props.strokeDasharray
-            );
+            removeListeners(this.strokeDasharray);
         }
         render() {
             const strokeDasharray = getStrokeDasharray(

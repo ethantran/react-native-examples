@@ -64,18 +64,18 @@ class SvgD3ShapeLinkRadial extends Component {
             this.generator = createGenerator(nextProps, this.generator);
         }
         if (sourceChanged) {
-            removeListeners(this.data.source.listeners, this.props.source);
+            removeListeners(this.data.source);
             this.data.source = listen(nextProps.source, _ => this.setNativeProps({ _listener: true }));
         }
         if (targetChanged) {
-            removeListeners(this.data.target.listeners, this.props.target);
+            removeListeners(this.data.target);
             this.data.target = listen(nextProps.target, _ => this.setNativeProps({ _listener: true }));
         }
         return argChanged || sourceChanged || targetChanged;
     }
     componentWillUnmount() {
-        removeListeners(this.data.source.listeners, this.props.source);
-        removeListeners(this.data.target.listeners, this.props.target);
+        removeListeners(this.data.source);
+        removeListeners(this.data.target);
     }
     render() {
         const filteredProps = omit(this.props, args);
