@@ -1,37 +1,58 @@
 import React, { Component } from 'react';
 import { Svg } from 'expo';
-import { Animated } from 'react-native';
 import * as d3 from 'd3-shape';
-import pick from 'lodash/pick';
 import omit from 'lodash/omit';
 
 import AnimatedSvgFix from './AnimatedSvgFix';
-import D3ShapeData from './D3ShapeData';
 import D3ShapeArc from './AnimatedSvgD3ShapeArc';
+import { listen, removeListeners } from '../animatedListener';
+import type { AnimatedListener } from '../animatedListener';
 
-export const args = ['value', 'sort', 'sortValues', 'startAngle', 'endAngle', 'padAngle'];
+type Pie = d3.Pie;
+type PieArcDatum = d3.PieArcDatum;
+type Props = {
+    arcProps: (arc: PieArcDatum, i: number) => Object
+};
 
-function createGenerator(props, generator) {
+export const args = [
+    'value',
+    'sort',
+    'sortValues',
+    'startAngle',
+    'endAngle',
+    'padAngle'
+];
+
+function createGenerator(props, generator?: Pie): Pie {
     generator = generator || d3.pie();
-    return args.reduce((acc, arg) => {
+    return args.reduce((acc: Pie, arg) => {
         const prop = props[arg];
         if (prop) {
-            return acc[arg](props[arg]);
+            return acc[arg](prop);
         }
         return acc;
     }, generator);
 }
 
-function getArcData(generator, data) {
+function getArcData(generator: Pie, data): PieArcDatum[] {
     return generator(data);
 }
 
+const defaultProps = {
+    arcProps: () => ({})
+};
+
 class SvgD3ShapePie extends Component {
+    props: Props;
+    generator: Pie;
+    data: AnimatedListener;
+    static defaultProps = typeof defaultProps;
     constructor(props) {
         super(props);
         this.generator = createGenerator(props);
-        this.data = props.children && props.children.length ? this.listenToChildren(props) : this.listenToData(props);
-        this.arcData = getArcData(this.generator, this.data);
+        this.data = listen(props.data, _ =>
+            this.setNativeProps({ _listener: true })
+        );
         this._components = [];
     }
     setNativeProps = (props = {}) => {
@@ -39,124 +60,52 @@ class SvgD3ShapePie extends Component {
         if (argChanged) {
             this.generator = createGenerator(props, this.generator);
         }
-        if (argChanged || props.updateD3Shape) {
-            this.arcData = getArcData(this.generator, this.data);
-            this.arcData.forEach((arcData, i) => {
-                this._components[arcData.index] && this._components[arcData.index].setNativeProps(arcData);
+        if (argChanged || props._listener) {
+            const arcData = getArcData(this.generator, this.data.values);
+            arcData.forEach((arcDataItem, i) => {
+                const component = this._components[arcDataItem.index];
+                component && component.setNativeProps(arcDataItem);
             });
         }
         this._component && this._component.setNativeProps(props);
-    }
-    updateDataItemProp = (dataIndex, propKey, value) => {
-        let newData = [...this.data];
-        let newDataItem = {
-            ...newData[dataIndex],
-            [propKey]: value
-        };
-        newData[dataIndex] = newDataItem;
-        return newData;
-    }
-    addListenerForAnimatedArgProp = (prop, dataIndex, propKey) => {
-        const addListener = prop._parent ? prop._parent.addListener.bind(prop._parent) : prop.addListener.bind(prop);
-        const interpolator = prop._interpolation;
-        let callback = e => e;
-        if (interpolator) {
-            callback = _value => interpolator(_value);
-        }
-        let prevCallback = callback;
-        callback = e => {
-            const value = prevCallback(e.value);
-            this.data = this.updateDataItemProp(dataIndex, propKey, value);
-            this.setNativeProps({ updateD3Shape: true });
-        };
-        return addListener(callback);
-    }
-    listenToChildren = ({ children }) => {
-        this.listeners = [];
-        let data = [];
-        let dataIndex = 0;
-        React.Children.forEach(children, (child) => {
-            if (child) {
-                if (child.type === D3ShapeData) {
-                    const dataItem = this.listenToDataItem(child.props, dataIndex);
-                    data[dataIndex] = dataItem;
-                    dataIndex += 1;
-                }
-            }
-        });
-        return data;
-    }
-    listenToData = ({ data }) => {
-        this.listeners = [];
-        return data.map(this.listenToDataItem);
-    }
-    listenToDataItem = (props, dataIndex) => {
-        return Object.keys(props).reduce((acc, key) => {
-            const prop = props[key];
-            if (prop instanceof Animated.Value || prop instanceof Animated.Interpolation) {
-                acc[key] = prop.__getValue();
-                const listener = this.addListenerForAnimatedArgProp(prop, dataIndex, key);
-                this.listeners.push(listener);
-            } else {
-                acc[key] = prop;
-            }
-            return acc;
-        }, {});
-    }
-    removeAllListeners = ({ children, data }) => {
-        React.Children.forEach(children, (child) => {
-            if (child) {
-                if (child.type === D3ShapeData) {
-                    this.removeListeners(child.props);
-                }
-            }
-        });
-        data.forEach(this.removeListeners);
-        this.listeners = [];
-    }
-    removeListeners = (props) => {
-        Object.keys(props).forEach((key) => {
-            const prop = props[key];
-            if (prop instanceof Animated.Value) {
-                this.listeners.forEach(listener => prop.removeListener(listener));
-            } else if (prop instanceof Animated.Interpolation) {
-                this.listeners.forEach(listener => prop._parent.removeListener(listener));
-            }
-        });
-    }
+    };
     shouldComponentUpdate(nextProps) {
-        const argChanged = args.some((key, index) => nextProps[key] !== this.props[key]);
-        const childrenChanged = nextProps.children !== this.props.children;
+        const argChanged = args.some(
+            (key, index) => nextProps[key] !== this.props[key]
+        );
         const dataChanged = nextProps.data !== this.props.data;
         if (argChanged) {
             this.generator = createGenerator(nextProps, this.generator);
         }
-        if (childrenChanged) {
-            this.removeAllListeners(this.props);
-            this.data = this.listenToChildren(nextProps);
-        }
         if (dataChanged) {
-            this.removeAllListeners(this.props);
-            this.data = this.listenToData(nextProps);
+            removeListeners(this.data.listeners, this.props.data);
+            this.data = listen(nextProps.data, _ =>
+                this.setNativeProps({ _listener: true })
+            );
         }
-        return argChanged || childrenChanged || dataChanged;
+        return argChanged || dataChanged;
     }
     componentWillUnmount() {
-        this.removeAllListeners(this.props);
+        removeListeners(this.data.listeners, this.props.data);
     }
     render() {
         const filteredProps = omit(this.props, args);
+        const arcData = getArcData(this.generator, this.data.values);
         return (
             <Svg.G
                 ref={component => (this._component = component)}
-                {...filteredProps}>
-                {this.arcData.map((arcData, i) => {
+                {...filteredProps}
+            >
+                {arcData.map((arcDataItem, i) => {
                     return (
                         <D3ShapeArc
-                            key={arcData.index}
-                            ref={component => (this._components[arcData.index] = component)}
-                            {...this.data[arcData.index]}
-                            {...arcData}
+                            key={arcDataItem.index}
+                            ref={component =>
+                                (this._components[
+                                    arcDataItem.index
+                                ] = component)}
+                            {...arcDataItem}
+                            {...this.props.arcProps(arcDataItem, i)}
                         />
                     );
                 })}
@@ -164,5 +113,6 @@ class SvgD3ShapePie extends Component {
         );
     }
 }
+SvgD3ShapePie.defaultProps = defaultProps;
 SvgD3ShapePie = AnimatedSvgFix(SvgD3ShapePie);
 export default SvgD3ShapePie;

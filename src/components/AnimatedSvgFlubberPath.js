@@ -46,7 +46,8 @@ class SvgFlubberPath extends Component {
         if (props.t) {
             if (Array.isArray(this.interpolator)) {
                 this.interpolator.forEach((childInterpolator, i) => {
-                    this._components[i].setNativeProps({ d: childInterpolator(props.t) });
+                    const component = this._components[i];
+                    component && component.setNativeProps({ d: childInterpolator(props.t) });
                 });
             } else {
                 props.d = this.interpolator(props.t);

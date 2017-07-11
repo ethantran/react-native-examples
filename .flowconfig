@@ -1,4 +1,13 @@
 [ignore]
+
+; ignore react-native errors
+.*/node_modules/react-native/Libraries/.*
+.*/node_modules/react-native/local-cli/.*
+.*/node_modules/react-native/packager/.*
+.*/node_modules/react-native/jest/.*
+.*/node_modules/react-native/Animated/.*
+.*/node_modules/react-native/ReactAndroid/.*
+
 ; We fork some components by platform
 .*/*[.]android.js
 
@@ -60,4 +69,4 @@ suppress_comment=\\(.\\|\n\\)*\\$FlowExpectedError
 unsafe.enable_getters_and_setters=true
 
 [version]
-^0.45.0
+^0.48.0

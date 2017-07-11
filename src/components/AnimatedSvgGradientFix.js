@@ -61,9 +61,9 @@ export default function SvgGradientFix(WrappedComponent) {
                 childPropKeys.forEach((key) => {
                     const prop = child.props[key];
                     if (prop instanceof Animated.Value) {
-                        this.listeners.forEach(listener => prop.removeListener(listener));
+                        this.listeners.forEach(prop.removeListener);
                     } else if (prop instanceof Animated.Interpolation) {
-                        this.listeners.forEach(listener => prop._parent.removeListener(listener));
+                        this.listeners.forEach(prop._parent.removeListener);
                     }
                 });
             });

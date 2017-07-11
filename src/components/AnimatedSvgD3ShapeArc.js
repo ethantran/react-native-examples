@@ -1,36 +1,38 @@
+// @flow
 import React, { Component } from 'react';
 import { Svg } from 'expo';
-import { Animated } from 'react-native';
 import * as d3 from 'd3-shape';
 import pick from 'lodash/pick';
 import omit from 'lodash/omit';
 
 import AnimatedSvgFix from './AnimatedSvgFix';
 
+type Arc = d3.Arc;
+
 const NativeSvgPath = Svg.Path;
 
 export const args = ['innerRadius', 'outerRadius', 'startAngle', 'endAngle', 'centroid', 'cornerRadius', 'padAngle', 'padRadius'];
 
-function createGenerator(props, generator) {
+function createGenerator(props, generator?: Arc): Arc {
     generator = generator || d3.arc();
-    return args.reduce((acc, arg) => {
+    return args.reduce((acc: Arc, arg) => {
         const prop = props[arg];
         if (prop) {
-            return acc[arg](props[arg]);
+            return acc[arg](prop);
         }
         return acc;
     }, generator);
 }
 
-function createPath(generator, props) {
+function createPath(generator: Arc, props): string {
     return generator(pick(props, args));
 }
 
 class SvgD3ShapeArc extends Component {
+    generator: Arc;
     constructor(props) {
         super(props);
         this.generator = createGenerator(props);
-        this.d = createPath(this.generator, pick(props, args));
     }
     setNativeProps = (props = {}) => {
         const argChanged = args.some((key, index) => props[key] != null);
@@ -43,17 +45,18 @@ class SvgD3ShapeArc extends Component {
     shouldComponentUpdate(nextProps) {
         const argChanged = args.some((key, index) => nextProps[key] !== this.props[key]);
         if (argChanged) {
-            this.d = createPath(this.generator, pick(nextProps, args));
+            this.generator = createGenerator(nextProps, this.generator);
         }
         return argChanged;
     }
     render() {
         const filteredProps = omit(this.props, args);
+        const d = createPath(this.generator, pick(this.props, args));
         return (
             <NativeSvgPath
                 ref={component => (this._component = component)}
                 {...filteredProps}
-                d={this.d}
+                d={d}
             />
         );
     }

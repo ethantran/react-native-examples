@@ -1,26 +1,24 @@
-// @flow
+/**
+ * TODO: animate source and target
+ */
 import React, { Component } from 'react';
 import { Svg } from 'expo';
-import * as d3 from 'd3-chord';
+import * as d3 from 'd3-shape';
 import omit from 'lodash/omit';
 
 import AnimatedSvgFix from './AnimatedSvgFix';
 import { listen, removeListeners } from '../animatedListener';
 import type { AnimatedListener } from '../animatedListener';
 
-type RibbonGenerator = d3.RibbonGenerator;
+type Link = d3.Link;
 
 const NativeSvgPath = Svg.Path;
 
-export const args = [
-    /* 'source', 'target', */ 'radius',
-    'startAngle',
-    'endAngle'
-];
+export const args = ['x', 'y'];
 
-function createGenerator(props, generator?: RibbonGenerator): RibbonGenerator {
-    generator = generator || d3.ribbon();
-    return args.reduce((acc: RibbonGenerator, arg) => {
+function createGenerator(props, generator?: Link): Link {
+    generator = generator || d3.linkHorizontal();
+    return args.reduce((acc: Link, arg) => {
         const prop = props[arg];
         if (prop) {
             return acc[arg](prop);
@@ -29,12 +27,12 @@ function createGenerator(props, generator?: RibbonGenerator): RibbonGenerator {
     }, generator);
 }
 
-function createPath(generator: RibbonGenerator, data): string {
+function createPath(generator: Link, data): string {
     return generator(data);
 }
 
-class SvgD3Ribbon extends Component {
-    generator: RibbonGenerator;
+class SvgD3ShapeLinkHorizontal extends Component {
+    generator: Link;
     data: {
         source: AnimatedListener,
         target: AnimatedListener
@@ -59,11 +57,9 @@ class SvgD3Ribbon extends Component {
             });
         }
         this._component && this._component.setNativeProps(props);
-    };
+    }
     shouldComponentUpdate(nextProps) {
-        const argChanged = args.some(
-            (key, index) => nextProps[key] !== this.props[key]
-        );
+        const argChanged = args.some((key, index) => nextProps[key] !== this.props[key]);
         const sourceChanged = nextProps.source !== this.props.source;
         const targetChanged = nextProps.target !== this.props.target;
         if (argChanged) {
@@ -98,5 +94,5 @@ class SvgD3Ribbon extends Component {
         );
     }
 }
-SvgD3Ribbon = AnimatedSvgFix(SvgD3Ribbon);
-export default SvgD3Ribbon;
+SvgD3ShapeLinkHorizontal = AnimatedSvgFix(SvgD3ShapeLinkHorizontal);
+export default SvgD3ShapeLinkHorizontal;

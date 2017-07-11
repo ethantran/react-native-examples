@@ -1,3 +1,9 @@
+// @flow
+/**
+ * Problem: What is the best way to animate a path with animated.value?
+ * Solution: This demonstrates how you can do it with d3-path
+ */
+
 import React, { Component } from 'react';
 import { Svg } from 'expo';
 import { Animated } from 'react-native';
@@ -6,10 +12,9 @@ import * as d3 from 'd3-path';
 import AnimatedSvgFix from './AnimatedSvgFix';
 import D3PathCommand from './D3PathCommand';
 
-/**
- * Problem: What is the best way to animate a path with animated.value?
- * Solution: This demonstrates how you can do it with d3-path
- */
+type Step = {
+    command: string
+}
 
 export const argsForCommand = {
     moveTo: ['x', 'y'],
@@ -24,7 +29,19 @@ export const argsForCommand = {
 
 const NativeSvgPath = Svg.Path;
 
+function createPathFromSteps(steps: Step[]): string {
+    let path = d3.path();
+    steps.forEach((step) => {
+        let args = argsForCommand[step.command];
+        args = args.map((key) => step[key]);
+        path[step.command](...args);
+    });
+    return path.toString();
+}
+
 class SvgD3Path extends Component {
+    listeners: any[];
+    steps: Step[];
     constructor(props) {
         super(props);
         this.listeners = [];
@@ -33,7 +50,7 @@ class SvgD3Path extends Component {
     }
     setNativeProps = (props = {}) => {
         if (props.updateD3Path) {
-            props.d = this.createPathFromSteps();
+            props.d = createPathFromSteps(this.steps);
         }
         this._component && this._component.setNativeProps(props);
     }
@@ -47,15 +64,6 @@ class SvgD3Path extends Component {
         let newSteps = [...this.steps];
         newSteps[stepIndex] = newStep;
         return newSteps;
-    }
-    createPathFromSteps = () => {
-        let path = d3.path();
-        this.steps.forEach((step) => {
-            let args = argsForCommand[step.command];
-            args = args.map((key) => step[key]);
-            path[step.command](...args);
-        });
-        return path.toString();
     }
     addListenerForAnimatedArgProp = (prop, arg, stepIndex) => {
         const addListener = prop._parent ? prop._parent.addListener.bind(prop._parent) : prop.addListener.bind(prop);
@@ -105,9 +113,9 @@ class SvgD3Path extends Component {
                     args.forEach((arg) => {
                         const prop = child.props[arg];
                         if (prop instanceof Animated.Value) {
-                            this.listeners.forEach(listener => prop.removeListener(listener));
+                            this.listeners.forEach(prop.removeListener);
                         } else if (prop instanceof Animated.Interpolation) {
-                            this.listeners.forEach(listener => prop._parent.removeListener(listener));
+                            this.listeners.forEach(prop._parent.removeListener);
                         }
                     });
                 }
@@ -128,7 +136,7 @@ class SvgD3Path extends Component {
     }
     render() {
         const { children, ...props } = this.props; // eslint-disable-line no-unused-vars
-        const d = this.createPathFromSteps();
+        const d = createPathFromSteps(this.steps);
         return (
             <NativeSvgPath
                 ref={component => (this._component = component)}

@@ -13,7 +13,8 @@
         "jasmine": true
     },
     "plugins": [
-        "react"
+        "react",
+        "flowtype"
     ],
     // Map from global var to bool specifying if it can be redefined
     "globals": {

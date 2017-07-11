@@ -12,7 +12,10 @@
     "eslint-plugin-babel": "4.1.1",
     "eslint-plugin-flowtype": "2.34.0",
     "eslint-plugin-react": "7.1.0",
+    "flow-bin": "^0.49.1",
     "jest-expo": "~18.0.0",
+    "prettier-eslint": "^6.4.2",
+    "react-fix-it": "^0.3.3",
     "react-native-scripts": "0.0.40",
     "react-test-renderer": "16.0.0-alpha.12"
   },
@@ -22,7 +25,8 @@
     "eject": "react-native-scripts eject",
     "android": "react-native-scripts android",
     "ios": "react-native-scripts ios",
-    "test": "node node_modules/jest/bin/jest.js --watch"
+    "test": "node node_modules/jest/bin/jest.js --watch",
+    "flow": "flow"
   },
   "jest": {
     "preset": "jest-expo"
@@ -30,11 +34,19 @@
   "dependencies": {
     "d3-array": "^1.2.0",
     "d3-chord": "^1.0.4",
+    "d3-collection": "^1.0.4",
+    "d3-contour": "^1.1.1",
+    "d3-geo": "^1.6.4",
+    "d3-hexbin": "^0.2.2",
     "d3-hierarchy": "^1.1.5",
     "d3-interpolate-path": "^1.1.1",
     "d3-path": "^1.0.5",
+    "d3-random": "^1.1.0",
+    "d3-sankey": "^0.7.1",
     "d3-scale": "^1.0.6",
+    "d3-scale-chromatic": "^1.1.1",
     "d3-shape": "^1.2.0",
+    "d3-voronoi": "^1.1.2",
     "expo": "^18.0.3",
     "flubber": "^0.3.0",
     "lorem-ipsum-react-native": "^1.0.3",
