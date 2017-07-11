@@ -3,11 +3,11 @@
  * TODO: animate data
  */
 import React, { Component } from 'react';
-import { Svg } from 'expo';
+import { Animated } from 'react-native';
 import * as d3 from 'd3-shape';
 import omit from 'lodash/omit';
 
-import AnimatedSvgFix from './AnimatedSvgFix';
+import G from './AnimatedSvgG';
 import { listen, removeListeners } from '../animatedListener';
 import type { AnimatedListener } from '../animatedListener';
 
@@ -45,7 +45,6 @@ class SvgD3ShapeLine extends Component {
     props: Props;
     generator: Stack;
     data: AnimatedListener;
-    seriesData: Series[];
     _component: any;
     _components: Object;
     constructor(props) {
@@ -54,7 +53,6 @@ class SvgD3ShapeLine extends Component {
         this.data = listen(props.data, _ =>
             this.setNativeProps({ _listener: true })
         );
-        this.seriesData = getSeriesData(this.generator, this.data.values);
         this._components = [];
     }
     setNativeProps = (props = {}) => {
@@ -63,8 +61,8 @@ class SvgD3ShapeLine extends Component {
             this.generator = createGenerator(props, this.generator);
         }
         if (argChanged || props._listener) {
-            this.seriesData = getSeriesData(this.generator, this.data.values);
-            this.seriesData.forEach((series, i) => {
+            const seriesData = getSeriesData(this.generator, this.data.values);
+            seriesData.forEach((series, i) => {
                 const component = this._components[i];
                 component && component.setNativeProps({ data: series });
             });
@@ -92,12 +90,13 @@ class SvgD3ShapeLine extends Component {
     }
     render() {
         const filteredProps = omit(this.props, args);
+        const seriesData = getSeriesData(this.generator, this.data.values);
         return (
-            <Svg.G
+            <G
                 ref={component => (this._component = component)}
                 {...filteredProps}
             >
-                {this.seriesData.map((seriesItem, i) => {
+                {seriesData.map((seriesItem, i) => {
                     const element = this.props.renderSeries(seriesItem, i);
                     if (element) {
                         return React.cloneElement(element, {
@@ -106,10 +105,10 @@ class SvgD3ShapeLine extends Component {
                     }
                     return element;
                 })}
-            </Svg.G>
+            </G>
         );
     }
 }
 SvgD3ShapeLine.defaultProps = defaultProps;
-SvgD3ShapeLine = AnimatedSvgFix(SvgD3ShapeLine);
+SvgD3ShapeLine = Animated.createAnimatedComponent(SvgD3ShapeLine);
 export default SvgD3ShapeLine;

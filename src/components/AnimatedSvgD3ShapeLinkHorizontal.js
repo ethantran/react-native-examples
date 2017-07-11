@@ -1,18 +1,14 @@
-/**
- * TODO: animate source and target
- */
+// @flow
 import React, { Component } from 'react';
-import { Svg } from 'expo';
+import { Animated } from 'react-native';
 import * as d3 from 'd3-shape';
 import omit from 'lodash/omit';
 
-import AnimatedSvgFix from './AnimatedSvgFix';
+import Path from './AnimatedSvgPath';
 import { listen, removeListeners } from '../animatedListener';
 import type { AnimatedListener } from '../animatedListener';
 
 type Link = d3.Link;
-
-const NativeSvgPath = Svg.Path;
 
 export const args = ['x', 'y'];
 
@@ -86,7 +82,7 @@ class SvgD3ShapeLinkHorizontal extends Component {
             target: this.data.target.values
         });
         return (
-            <NativeSvgPath
+            <Path
                 ref={component => (this._component = component)}
                 {...filteredProps}
                 d={d}
@@ -94,5 +90,5 @@ class SvgD3ShapeLinkHorizontal extends Component {
         );
     }
 }
-SvgD3ShapeLinkHorizontal = AnimatedSvgFix(SvgD3ShapeLinkHorizontal);
+SvgD3ShapeLinkHorizontal = Animated.createAnimatedComponent(SvgD3ShapeLinkHorizontal);
 export default SvgD3ShapeLinkHorizontal;

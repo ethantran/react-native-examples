@@ -1,16 +1,14 @@
 // @flow
 import React, { Component } from 'react';
-import { Svg } from 'expo';
+import { Animated } from 'react-native';
 import * as d3 from 'd3-chord';
 import omit from 'lodash/omit';
 
-import AnimatedSvgFix from './AnimatedSvgFix';
+import Path from './AnimatedSvgPath';
 import { listen, removeListeners } from '../animatedListener';
 import type { AnimatedListener } from '../animatedListener';
 
 type RibbonGenerator = d3.RibbonGenerator;
-
-const NativeSvgPath = Svg.Path;
 
 export const args = [
     /* 'source', 'target', */ 'radius',
@@ -90,7 +88,7 @@ class SvgD3Ribbon extends Component {
             target: this.data.target.values
         });
         return (
-            <NativeSvgPath
+            <Path
                 ref={component => (this._component = component)}
                 {...filteredProps}
                 d={d}
@@ -98,5 +96,5 @@ class SvgD3Ribbon extends Component {
         );
     }
 }
-SvgD3Ribbon = AnimatedSvgFix(SvgD3Ribbon);
+SvgD3Ribbon = Animated.createAnimatedComponent(SvgD3Ribbon);
 export default SvgD3Ribbon;

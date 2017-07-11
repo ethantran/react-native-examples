@@ -1,10 +1,10 @@
 // @flow
 import React, { Component } from 'react';
-import { Svg } from 'expo';
+import { Animated } from 'react-native';
 import * as d3 from 'd3-chord';
 import omit from 'lodash/omit';
 
-import AnimatedSvgFix from './AnimatedSvgFix';
+import G from './AnimatedSvgG';
 import D3ShapeArc from './AnimatedSvgD3ShapeArc';
 import D3Ribbon from './AnimatedSvgD3Ribbon';
 import { listen, removeListeners } from '../animatedListener';
@@ -95,7 +95,7 @@ class SvgD3Chord extends Component {
         const filteredProps = omit(this.props, args);
         const chords = getChords(this.generator, this.matrix.values);
         return (
-            <Svg.G
+            <G
                 ref={component => (this._component = component)}
                 {...filteredProps}
             >
@@ -124,10 +124,10 @@ class SvgD3Chord extends Component {
                         />
                     );
                 })}
-            </Svg.G>
+            </G>
         );
     }
 }
 SvgD3Chord.defaultProps = defaultProps;
-SvgD3Chord = AnimatedSvgFix(SvgD3Chord);
+SvgD3Chord = Animated.createAnimatedComponent(SvgD3Chord);
 export default SvgD3Chord;

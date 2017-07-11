@@ -1,15 +1,13 @@
-/**
- * TODO: figure out how to animate props.points
- * @flow
- */
-
+// @flow
 import React, { Component } from 'react';
-// $FlowFixMe
-import { Svg } from 'expo';
+import { Animated } from 'react-native';
 import * as d3 from 'd3-hexbin';
 import omit from 'lodash/omit';
 
-import AnimatedSvgFix from './AnimatedSvgFix';
+import G from './AnimatedSvgG';
+import Path from './AnimatedSvgPath';
+import { listen, removeListeners } from '../animatedListener';
+import type { AnimatedListener } from '../animatedListener';
 
 type Hexbin = typeof d3.hexbin;
 type Bin = number[] & {
@@ -57,6 +55,7 @@ const defaultProps = {
 class SvgD3Hexbin extends Component {
     props: Props;
     generator: Hexbin;
+    points: AnimatedListener;
     bins: Bin[];
     _component: any;
     _components: Object;
@@ -65,14 +64,28 @@ class SvgD3Hexbin extends Component {
     constructor(props: Props) {
         super(props);
         this.generator = createGenerator(props);
-        this.bins = getBins(this.generator, this.props.points);
+        this.points = listen(props.points, _ =>
+            this.setNativeProps({ _listener: true })
+        );
         this._components = {};
     }
     setNativeProps = (props = {}) => {
         const argChanged = args.some((key, index) => props[key] != null);
         if (argChanged) {
             this.generator = createGenerator(props, this.generator);
-            this.bins = getBins(this.generator, this.props.points);
+        }
+        if (argChanged || props._listener) {
+            const bins = getBins(this.generator, this.points.values);
+            const d = this.generator.hexagon();
+            bins.forEach((bin, i) => {
+                const component = this._components[i];
+                component &&
+                    component.setNativeProps({
+                        d,
+                        translateX: bin.x,
+                        translateY: bin.y
+                    });
+            });
         }
         this._component && this._component.setNativeProps(props);
     };
@@ -84,16 +97,23 @@ class SvgD3Hexbin extends Component {
         if (argChanged) {
             this.generator = createGenerator(nextProps, this.generator);
         }
-        if (argChanged || pointsChanged) {
-            this.bins = getBins(this.generator, nextProps.points);
+        if (pointsChanged) {
+            removeListeners(this.points);
+            this.points = listen(nextProps.points, _ =>
+                this.setNativeProps({ _listener: true })
+            );
         }
         return argChanged || pointsChanged;
+    }
+    componentWillUnmount() {
+        removeListeners(this.values);
     }
     renderBin = (bin, i) => {
         const d = this.generator.hexagon();
         return (
-            <Svg.Path
+            <Path
                 ref={component => (this._components[i] = component)}
+                key={i}
                 d={d}
                 translateX={bin.x}
                 translateY={bin.y}
@@ -103,13 +123,14 @@ class SvgD3Hexbin extends Component {
     };
     render() {
         const filteredProps = omit(this.props, args);
+        const bins = getBins(this.generator, this.points.values);
         const renderBin = this.props.renderBin || this.renderBin;
         return (
-            <Svg.G
+            <G
                 ref={component => (this._component = component)}
                 {...filteredProps}
             >
-                {this.bins.map((bin, i) => {
+                {bins.map((bin, i) => {
                     const element = renderBin(bin, i);
                     if (element) {
                         return React.cloneElement(element, {
@@ -118,10 +139,10 @@ class SvgD3Hexbin extends Component {
                     }
                     return element;
                 })}
-            </Svg.G>
+            </G>
         );
     }
 }
 SvgD3Hexbin.defaultProps = defaultProps;
-SvgD3Hexbin = AnimatedSvgFix(SvgD3Hexbin);
+SvgD3Hexbin = Animated.createAnimatedComponent(SvgD3Hexbin);
 export default SvgD3Hexbin;

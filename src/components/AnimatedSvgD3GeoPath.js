@@ -1,15 +1,12 @@
-/**
- * @flow
- * TODO: animate object
- */
-
+// @flow
 import React, { Component } from 'react';
-// $FlowFixMe
-import { Svg } from 'expo';
+import { Animated } from 'react-native';
 import * as d3 from 'd3-geo';
 import omit from 'lodash/omit';
 
-import AnimatedSvgFix from './AnimatedSvgFix';
+import Path from './AnimatedSvgPath';
+import { listen, removeListeners } from '../animatedListener';
+import type { AnimatedListener } from '../animatedListener';
 
 type GeoPath = d3.GeoPath;
 
@@ -44,18 +41,27 @@ function getPath(generator: GeoPath, object): string {
 class SvgD3GeoPath extends Component {
     props: Props;
     generator: GeoPath;
-     _component: any;
+    object: AnimatedListener;
+    _component: any;
     _components: Object;
 
     constructor(props: Props) {
         super(props);
         this.generator = createGenerator(props);
+        this.object = listen(props.object, _ =>
+            this.setNativeProps({ _listener: true })
+        );
     }
     setNativeProps = (props = {}) => {
         const argChanged = args.some((key, index) => props[key] != null);
         if (argChanged) {
             this.generator = createGenerator(props, this.generator);
-            props.d = getPath(this.generator, this.props.object);
+        }
+        if (argChanged || props.object || props._listener) {
+            props.d = getPath(
+                this.generator,
+                props.object || this.object.values
+            );
         }
         this._component && this._component.setNativeProps(props);
     };
@@ -67,13 +73,22 @@ class SvgD3GeoPath extends Component {
         if (argChanged) {
             this.generator = createGenerator(nextProps, this.generator);
         }
+        if (objectChanged) {
+            removeListeners(this.object);
+            this.object = listen(nextProps.object, _ =>
+                this.setNativeProps({ _listener: true })
+            );
+        }
         return argChanged || objectChanged;
+    }
+    componentWillUnmount() {
+        removeListeners(this.object);
     }
     render() {
         const filteredProps = omit(this.props, args);
-        const d = getPath(this.generator, this.props);
+        const d = getPath(this.generator, this.object.values);
         return (
-            <Svg.Path
+            <Path
                 ref={component => (this._component = component)}
                 {...filteredProps}
                 d={d}
@@ -81,5 +96,5 @@ class SvgD3GeoPath extends Component {
         );
     }
 }
-SvgD3GeoPath = AnimatedSvgFix(SvgD3GeoPath);
+SvgD3GeoPath = Animated.createAnimatedComponent(SvgD3GeoPath);
 export default SvgD3GeoPath;

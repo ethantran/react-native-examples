@@ -1,15 +1,17 @@
 // @flow
 /**
  * BUG: animating nodeWidth or nodePadding crashes
- * TODO: how to animate values
  */
 import React, { Component } from 'react';
-// $FlowFixMe
-import { Svg } from 'expo';
+import { Animated } from 'react-native';
 import * as d3 from 'd3-sankey';
 import omit from 'lodash/omit';
 
-import AnimatedSvgFix from './AnimatedSvgFix';
+import G from './AnimatedSvgG';
+import Path from './AnimatedSvgPath';
+import Rect from './AnimatedSvgRect';
+import { listen, removeListeners } from '../animatedListener';
+import type { AnimatedListener } from '../animatedListener';
 
 type Sankey = typeof d3.sankey;
 
@@ -95,6 +97,7 @@ class SvgD3Sankey extends Component {
     props: Props;
     graph: Graph;
     generator: Sankey;
+    values: AnimatedListener;
     _component: any;
     _components: Object;
     static defaultProps = typeof defaultProps;
@@ -102,22 +105,26 @@ class SvgD3Sankey extends Component {
     constructor(props) {
         super(props);
         this.generator = createGenerator(props);
-        this.graph = getGraph(this.generator, this.props.values);
+        this.values = listen(props.values, _ =>
+            this.setNativeProps({ _listener: true })
+        );
         this._components = {};
     }
     setNativeProps = (props = {}) => {
         const argChanged = args.some((key, index) => props[key] != null);
         if (argChanged) {
             this.generator = createGenerator(props, this.generator);
-            this.graph = getGraph(this.generator, this.props.values);
-            this.graph.links.forEach((link, i) => {
+        }
+        if (argChanged || props._listener) {
+            const graph = getGraph(this.generator, this.values.values);
+            graph.links.forEach((link, i) => {
                 const component = this._components['link' + link.index];
                 component &&
                     component.setNativeProps({
                         d: d3.sankeyLinkHorizontal()(link)
                     });
             });
-            this.graph.nodes.forEach((node, i) => {
+            graph.nodes.forEach((node, i) => {
                 const component = this._components['node' + node.index];
                 component &&
                     component.setNativeProps({
@@ -138,15 +145,21 @@ class SvgD3Sankey extends Component {
         if (argChanged) {
             this.generator = createGenerator(nextProps, this.generator);
         }
-        if (argChanged || valuesChanged) {
-            this.graph = getGraph(this.generator, nextProps.values);
+        if (valuesChanged) {
+            removeListeners(this.values);
+            this.values = listen(nextProps.values, _ =>
+                this.setNativeProps({ _listener: true })
+            );
         }
         return argChanged || valuesChanged;
+    }
+    componentWillUnmount() {
+        removeListeners(this.values);
     }
     renderLink = (link, i) => {
         const key = 'link' + link.index;
         return (
-            <Svg.Path
+            <Path
                 ref={component => (this._components[key] = component)}
                 key={key}
                 d={d3.sankeyLinkHorizontal()(link)}
@@ -157,7 +170,7 @@ class SvgD3Sankey extends Component {
     renderNode = (node, i) => {
         const key = 'node' + node.index;
         return (
-            <Svg.Rect
+            <Rect
                 ref={component => (this._components[key] = component)}
                 key={key}
                 x={node.x0}
@@ -170,17 +183,18 @@ class SvgD3Sankey extends Component {
     };
     render() {
         const filteredProps = omit(this.props, args);
+        const graph = getGraph(this.generator, this.values.values);
         if (this.props.renderGraph) {
-            return this.props.renderGraph(this.graph);
+            return this.props.renderGraph(graph);
         }
         const renderLink = this.props.renderLink || this.renderLink;
         const renderNode = this.props.renderNode || this.renderNode;
         return (
-            <Svg.G
+            <G
                 ref={component => (this._component = component)}
                 {...filteredProps}
             >
-                {this.graph.links.map((link, i) => {
+                {graph.links.map((link, i) => {
                     const key = 'link' + link.index;
                     const element = renderLink(link, i);
                     if (element) {
@@ -191,7 +205,7 @@ class SvgD3Sankey extends Component {
                     }
                     return element;
                 })}
-                {this.graph.nodes.map((node, i) => {
+                {graph.nodes.map((node, i) => {
                     const key = 'node' + node.index;
                     const element = renderNode(node, i);
                     if (element) {
@@ -202,10 +216,10 @@ class SvgD3Sankey extends Component {
                     }
                     return element;
                 })}
-            </Svg.G>
+            </G>
         );
     }
 }
 SvgD3Sankey.defaultProps = defaultProps;
-SvgD3Sankey = AnimatedSvgFix(SvgD3Sankey);
+SvgD3Sankey = Animated.createAnimatedComponent(SvgD3Sankey);
 export default SvgD3Sankey;

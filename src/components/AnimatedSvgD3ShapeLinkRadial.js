@@ -1,16 +1,14 @@
 // @flow
 import React, { Component } from 'react';
-import { Svg } from 'expo';
+import { Animated } from 'react-native';
 import * as d3 from 'd3-shape';
 import omit from 'lodash/omit';
 
-import AnimatedSvgFix from './AnimatedSvgFix';
+import Path from './AnimatedSvgPath';
 import { listen, removeListeners } from '../animatedListener';
 import type { AnimatedListener } from '../animatedListener';
 
 type Link = d3.LinkRadial;
-
-const NativeSvgPath = Svg.Path;
 
 export const args = ['angle', 'radius'];
 
@@ -84,7 +82,7 @@ class SvgD3ShapeLinkRadial extends Component {
             target: this.data.target.values
         });
         return (
-            <NativeSvgPath
+            <Path
                 ref={component => (this._component = component)}
                 {...filteredProps}
                 d={d}
@@ -92,5 +90,5 @@ class SvgD3ShapeLinkRadial extends Component {
         );
     }
 }
-SvgD3ShapeLinkRadial = AnimatedSvgFix(SvgD3ShapeLinkRadial);
+SvgD3ShapeLinkRadial = Animated.createAnimatedComponent(SvgD3ShapeLinkRadial);
 export default SvgD3ShapeLinkRadial;

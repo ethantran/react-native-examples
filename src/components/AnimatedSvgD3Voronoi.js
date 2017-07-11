@@ -3,8 +3,7 @@
  * TODO: animate data
  */
 import React, { Component } from 'react';
-// $FlowFixMe
-import { Svg } from 'expo';
+import { Animated } from 'react-native';
 import * as d3 from 'd3-voronoi';
 import omit from 'lodash/omit';
 
@@ -13,7 +12,9 @@ type VoronoiEdge = d3.VoronoiEdge;
 type VoronoiCell = d3.VoronoiCell;
 type VoronoiDiagram = d3.VoronoiDiagram;
 
-import AnimatedSvgFix from './AnimatedSvgFix';
+import G from './AnimatedSvgG';
+import { listen, removeListeners } from '../animatedListener';
+import type { AnimatedListener } from '../animatedListener';
 
 export const args = [
     'x',
@@ -60,21 +61,43 @@ const defaultProps = {
 class SvgD3Voronoi extends Component {
     props: Props;
     generator: VoronoiLayout;
-    diagram: VoronoiDiagram;
+    data: AnimatedListener;
     _component: any;
     _components: Object;
     static defaultProps = typeof defaultProps;
     constructor(props) {
         super(props);
         this.generator = createGenerator(props);
-        this.diagram = getDiagram(this.generator, this.props.data);
+        this.data = listen(props.data, _ =>
+            this.setNativeProps({ _listener: true })
+        );
         this._components = {};
     }
     setNativeProps = (props = {}) => {
         const argChanged = args.some((key, index) => props[key] != null);
         if (argChanged) {
             this.generator = createGenerator(props, this.generator);
-            this.diagram = getDiagram(this.generator, this.props.data);
+        }
+        if (argChanged || props._listener) {
+            const diagram = getDiagram(this.generator, this.data.values);
+            if (this.props.renderPolygon) {
+                diagram.polygons().forEach((polygon, i) => {
+                    const component = this._components['polygon' + i];
+                    component && component.setNativeProps({ polygon });
+                });
+            }
+            if (this.props.renderTriangle) {
+                diagram.triangles().forEach((triangle, i) => {
+                    const component = this._components['triangle' + i];
+                    component && component.setNativeProps({ triangle });
+                });
+            }
+            if (this.props.renderLink) {
+                diagram.links().forEach((link, i) => {
+                    const component = this._components['link' + i];
+                    component && component.setNativeProps({ link });
+                });
+            }
         }
         this._component && this._component.setNativeProps(props);
     };
@@ -87,27 +110,68 @@ class SvgD3Voronoi extends Component {
             this.generator = createGenerator(nextProps, this.generator);
         }
         if (dataChanged) {
-            this.diagram = getDiagram(this.generator, nextProps.data);
+            removeListeners(this.data);
+            this.data = listen(nextProps.data, _ =>
+                this.setNativeProps({ _listener: true })
+            );
         }
         return argChanged || dataChanged;
     }
+    componentWillUnmount() {
+        removeListeners(this.data);
+    }
     render() {
         const filteredProps = omit(this.props, args);
+        const diagram = getDiagram(this.generator, this.data.values);
         if (this.props.renderDiagram) {
-            return this.props.renderDiagram(this.diagram);
+            return this.props.renderDiagram(diagram);
         }
         return (
-            <Svg.G
+            <G
                 ref={component => (this._component = component)}
                 {...filteredProps}
             >
-                {this.props.renderPolygon && this.diagram.polygons().map(this.props.renderPolygon)}
-                {this.props.renderTriangle && this.diagram.triangles().map(this.props.renderTriangle)}
-                {this.props.renderLink && this.diagram.links().map(this.props.renderLink)}
-            </Svg.G>
+                {this.props.renderPolygon &&
+                    diagram.polygons().map((polygon, i) => {
+                        const element = this.props.renderPolygon(polygon, i);
+                        if (element) {
+                            return React.cloneElement(element, {
+                                ref: component =>
+                                    (this._components[
+                                        'polygon' + i
+                                    ] = component)
+                            });
+                        }
+                        return element;
+                    })}
+                {this.props.renderTriangle &&
+                    diagram.triangles().map((triangle, i) => {
+                        const element = this.props.renderTriangle(triangle, i);
+                        if (element) {
+                            return React.cloneElement(element, {
+                                ref: component =>
+                                    (this._components[
+                                        'triangle' + i
+                                    ] = component)
+                            });
+                        }
+                        return element;
+                    })}
+                {this.props.renderLink &&
+                    diagram.links().map((link, i) => {
+                        const element = this.props.renderLink(link, i);
+                        if (element) {
+                            return React.cloneElement(element, {
+                                ref: component =>
+                                    (this._components['link' + i] = component)
+                            });
+                        }
+                        return element;
+                    })}
+            </G>
         );
     }
 }
 SvgD3Voronoi.defaultProps = defaultProps;
-SvgD3Voronoi = AnimatedSvgFix(SvgD3Voronoi);
+SvgD3Voronoi = Animated.createAnimatedComponent(SvgD3Voronoi);
 export default SvgD3Voronoi;

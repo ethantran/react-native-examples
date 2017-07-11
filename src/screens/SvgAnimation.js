@@ -254,9 +254,27 @@ const animTypes = {
     D3ShapeLineRadial: [...d3ShapeLineRadialArgs, 'data', ...lineAnimTypes],
     D3ShapeArea: [...d3ShapeAreaArgs, 'data', ...shapeAnimTypes],
     D3ShapeAreaRadial: [...d3ShapeAreaRadialArgs, 'data', ...shapeAnimTypes],
-    D3ShapeLinkHorizontal: [...d3ShapeLinkHorizontalArgs, 'source', 'target', 'source+target', ...lineAnimTypes],
-    D3ShapeLinkVertical: [...d3ShapeLinkVerticalArgs, 'source', 'target', 'source+target', ...lineAnimTypes],
-    D3ShapeLinkRadial: [...d3ShapeLinkRadialArgs, 'source', 'target', 'source+target', ...lineAnimTypes],
+    D3ShapeLinkHorizontal: [
+        ...d3ShapeLinkHorizontalArgs,
+        'source',
+        'target',
+        'source+target',
+        ...lineAnimTypes
+    ],
+    D3ShapeLinkVertical: [
+        ...d3ShapeLinkVerticalArgs,
+        'source',
+        'target',
+        'source+target',
+        ...lineAnimTypes
+    ],
+    D3ShapeLinkRadial: [
+        ...d3ShapeLinkRadialArgs,
+        'source',
+        'target',
+        'source+target',
+        ...lineAnimTypes
+    ],
     D3ShapeStack: [...d3ShapeStackArgs, 'data', ...transformAnimTypes],
     D3Chord: [...d3ChordArgs, 'data', ...transformAnimTypes],
     D3Ribbon: [...d3RibbonArgs, 'data', ...shapeAnimTypes],
@@ -293,7 +311,7 @@ const animTypes = {
     D3Contour: [...d3ContourArgs, 'data', ...transformAnimTypes],
     D3ContourDensity: [...d3ContourDensityArgs, 'data', ...transformAnimTypes],
     D3Voronoi: [...d3VoronoiArgs, 'data', ...transformAnimTypes],
-    D3Hexbin: [...d3HexbinArgs, ...transformAnimTypes]
+    D3Hexbin: [...d3HexbinArgs, 'data', ...transformAnimTypes]
 };
 
 const styles = StyleSheet.create({
@@ -898,7 +916,9 @@ export default class SvgAnimation extends Component {
         };
 
         // D3Contour
-        const _contourData = contourData(100, 100);
+        const contourWidth = 10;
+        const contourHeight = 10;
+        const _contourData = contourData(contourWidth, contourHeight);
         const thresholds = d3Array.range(1, 21).map(p => Math.pow(2, p));
         const contourColor = d3Scale
             .scaleLog()
@@ -907,12 +927,13 @@ export default class SvgAnimation extends Component {
         normalPropsForType.D3Contour = {
             ...pick(SvgAnimation.defaultProps, d3ContourArgs),
             values: _contourData,
-            size: [100, 100],
+            size: [contourWidth, contourHeight],
             thresholds,
             contourProps: contour => ({
                 fill: contourColor(contour.value)
             }),
-            translate: 0
+            translate: 0,
+            scale: width / 10
         };
 
         // D3ContourDensity
@@ -935,14 +956,16 @@ export default class SvgAnimation extends Component {
         };
 
         // D3Voronoi
+        const voronoiLength = 10;
         const voronoiData = d3Array
-            .range(100)
-            .map(_ => [Math.random() * width, Math.random() * height]);
+            .range(voronoiLength)
+            .map(_ => [Math.random() * width, Math.random() * width]);
         normalPropsForType.D3Voronoi = {
             data: voronoiData,
-            size: [width, height],
-            renderPolygon: polygon =>
+            size: [width, width],
+            renderPolygon: (polygon, i) =>
                 <NativeSvg.Path
+                    key={i}
                     d={'M' + polygon.join('L') + 'Z'}
                     fill="none"
                     stroke="black"
@@ -951,7 +974,7 @@ export default class SvgAnimation extends Component {
         };
 
         // D3Hexbin
-        const numPoints = 100;
+        const numPoints = 5;
         const rx = d3Random.randomNormal(width / 2, 80);
         const ry = d3Random.randomNormal(height / 2, 80);
         const points = d3Array.range(numPoints).map(_ => [rx(), ry()]);
@@ -1598,6 +1621,118 @@ export default class SvgAnimation extends Component {
         if (type.includes('D3ShapeLink') && animType === 'source+target') {
             props3.source = [this.x, this.y];
             props3.target = [this.x0, this.y1];
+        }
+
+        if (type === 'D3Contour' && animType === 'data') {
+            const normalProps = this.getNormalProps({ type, animType });
+            props3.values = normalProps.values.map(
+                value => new Animated.Value(value)
+            );
+            Animated.sequence([
+                Animated.delay(2000),
+                ...props3.values.map(value =>
+                    Animated.timing(value, {
+                        toValue: value.__getValue() * 2,
+                        duration: 2000
+                    })
+                )
+            ]).start();
+        }
+
+        if (type === 'D3ContourDensity' && animType === 'data') {
+            const normalProps = this.getNormalProps({ type, animType });
+            props3.data = normalProps.data.map(value => ({
+                eruptions: new Animated.Value(value.eruptions),
+                waiting: new Animated.Value(value.waiting)
+            }));
+            Animated.sequence([
+                Animated.delay(2000),
+                ...props3.data.map(value =>
+                    Animated.sequence([
+                        Animated.timing(value.eruptions, {
+                            toValue:
+                                value.eruptions.__getValue() +
+                                value.eruptions.__getValue() / 2,
+                            duration: 1000
+                        }),
+                        Animated.timing(value.waiting, {
+                            toValue:
+                                value.waiting.__getValue() +
+                                value.waiting.__getValue() / 2,
+                            duration: 1000
+                        })
+                    ])
+                )
+            ]).start();
+        }
+
+        const { width, height } = Dimensions.get('window');
+        if (type === 'D3Hexbin' && animType === 'data') {
+            const normalProps = this.getNormalProps({ type, animType });
+            const rx = d3Random.randomNormal(width / 2, 80);
+            const ry = d3Random.randomNormal(height / 2, 80);
+            props3.points = normalProps.points.map(value => [
+                new Animated.Value(value[0]),
+                new Animated.Value(value[1])
+            ]);
+            Animated.sequence([
+                Animated.delay(2000),
+                ...props3.points.map(value =>
+                    Animated.sequence([
+                        Animated.timing(value[0], {
+                            toValue: rx(),
+                            duration: 1000
+                        }),
+                        Animated.timing(value[1], {
+                            toValue: ry(),
+                            duration: 1000
+                        })
+                    ])
+                )
+            ]).start();
+        }
+
+        if (type === 'D3Sankey' && animType === 'data') {
+            const normalProps = this.getNormalProps({ type, animType });
+            props3.values = { ...normalProps.values };
+            props3.values.links = normalProps.values.links.map(link => ({
+                ...link,
+                value: new Animated.Value(link.value)
+            }));
+            Animated.sequence([
+                Animated.delay(2000),
+                ...props3.values.links.map(link =>
+                    Animated.timing(link.value, {
+                        toValue:
+                            link.value.__getValue() +
+                            link.value.__getValue() / 2,
+                        duration: 1000
+                    })
+                )
+            ]).start();
+        }
+
+        if (type === 'D3Voronoi' && animType === 'data') {
+            const normalProps = this.getNormalProps({ type, animType });
+            props3.data = normalProps.data.map(item => [
+                new Animated.Value(item[0]),
+                new Animated.Value(item[1])
+            ]);
+            Animated.sequence([
+                Animated.delay(2000),
+                ...props3.data.map(item =>
+                    Animated.sequence([
+                        Animated.timing(item[0], {
+                            toValue: Math.random() * width,
+                            duration: 1000
+                        }),
+                        Animated.timing(item[1], {
+                            toValue: Math.random() * width,
+                            duration: 1000
+                        })
+                    ])
+                )
+            ]).start();
         }
 
         props3 = mergeProps(props, props2, props3);

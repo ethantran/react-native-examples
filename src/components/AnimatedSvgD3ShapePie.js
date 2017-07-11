@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
-import { Svg } from 'expo';
+import { Animated } from 'react-native';
 import * as d3 from 'd3-shape';
 import omit from 'lodash/omit';
 
-import AnimatedSvgFix from './AnimatedSvgFix';
+import G from './AnimatedSvgG';
 import D3ShapeArc from './AnimatedSvgD3ShapeArc';
 import { listen, removeListeners } from '../animatedListener';
 import type { AnimatedListener } from '../animatedListener';
@@ -92,7 +92,7 @@ class SvgD3ShapePie extends Component {
         const filteredProps = omit(this.props, args);
         const arcData = getArcData(this.generator, this.data.values);
         return (
-            <Svg.G
+            <G
                 ref={component => (this._component = component)}
                 {...filteredProps}
             >
@@ -109,10 +109,10 @@ class SvgD3ShapePie extends Component {
                         />
                     );
                 })}
-            </Svg.G>
+            </G>
         );
     }
 }
 SvgD3ShapePie.defaultProps = defaultProps;
-SvgD3ShapePie = AnimatedSvgFix(SvgD3ShapePie);
+SvgD3ShapePie = Animated.createAnimatedComponent(SvgD3ShapePie);
 export default SvgD3ShapePie;

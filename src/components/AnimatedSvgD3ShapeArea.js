@@ -1,16 +1,14 @@
 // @flow
 import React, { Component } from 'react';
-import { Svg } from 'expo';
+import { Animated } from 'react-native';
 import * as d3 from 'd3-shape';
 import omit from 'lodash/omit';
 
-import AnimatedSvgFix from './AnimatedSvgFix';
+import Path from './AnimatedSvgPath';
 import { listen, removeListeners } from '../animatedListener';
 import type { AnimatedListener } from '../animatedListener';
 
 type Area = d3.Area;
-
-const NativeSvgPath = Svg.Path;
 
 export const args = [
     'x',
@@ -81,7 +79,7 @@ class SvgD3ShapeArea extends Component {
         const filteredProps = omit(this.props, args);
         const d = createPath(this.generator, this.data.values);
         return (
-            <NativeSvgPath
+            <Path
                 ref={component => (this._component = component)}
                 {...filteredProps}
                 d={d}
@@ -89,5 +87,5 @@ class SvgD3ShapeArea extends Component {
         );
     }
 }
-SvgD3ShapeArea = AnimatedSvgFix(SvgD3ShapeArea);
+SvgD3ShapeArea = Animated.createAnimatedComponent(SvgD3ShapeArea);
 export default SvgD3ShapeArea;

@@ -1,15 +1,13 @@
 import React, { Component } from 'react';
-import { Svg } from 'expo';
+import { Animated } from 'react-native';
 import * as d3 from 'd3-shape';
 import omit from 'lodash/omit';
 
-import AnimatedSvgFix from './AnimatedSvgFix';
+import Path from './AnimatedSvgPath';
 import { listen, removeListeners } from '../animatedListener';
 import type { AnimatedListener } from '../animatedListener';
 
 type LineRadial = d3.LineRadial;
-
-const NativeSvgPath = Svg.Path;
 
 export const args = ['angle', 'radius', 'defined', 'curve'];
 
@@ -65,7 +63,7 @@ class SvgD3ShapeLineRadial extends Component {
         const filteredProps = omit(this.props, args);
         const d = createPath(this.generator, this.data.values);
         return (
-            <NativeSvgPath
+            <Path
                 ref={component => (this._component = component)}
                 {...filteredProps}
                 d={d}
@@ -73,5 +71,5 @@ class SvgD3ShapeLineRadial extends Component {
         );
     }
 }
-SvgD3ShapeLineRadial = AnimatedSvgFix(SvgD3ShapeLineRadial);
+SvgD3ShapeLineRadial = Animated.createAnimatedComponent(SvgD3ShapeLineRadial);
 export default SvgD3ShapeLineRadial;

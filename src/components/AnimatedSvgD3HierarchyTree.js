@@ -4,12 +4,11 @@
  */
 
 import React, { Component } from 'react';
-// $FlowFixMe
-import { Svg } from 'expo';
+import { Animated } from 'react-native';
 import * as d3 from 'd3-hierarchy';
 import omit from 'lodash/omit';
 
-import AnimatedSvgFix from './AnimatedSvgFix';
+import G from './AnimatedSvgG';
 
 type Tree = typeof d3.tree;
 type Node = d3.HierarchyNode;
@@ -109,7 +108,7 @@ class SvgD3HierarchyTree extends Component {
             renderItem = this.props.renderLink;
         }
         return (
-            <Svg.G
+            <G
                 ref={component => (this._component = component)}
                 {...filteredProps}
             >
@@ -122,10 +121,10 @@ class SvgD3HierarchyTree extends Component {
                     }
                     return element;
                 })}
-            </Svg.G>
+            </G>
         );
     }
 }
 SvgD3HierarchyTree.defaultProps = defaultProps;
-SvgD3HierarchyTree = AnimatedSvgFix(SvgD3HierarchyTree);
+SvgD3HierarchyTree = Animated.createAnimatedComponent(SvgD3HierarchyTree);
 export default SvgD3HierarchyTree;
