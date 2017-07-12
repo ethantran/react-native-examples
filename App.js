@@ -1,3 +1,4 @@
-import SvgAnimation from './src/screens/SvgAnimation';
+import { StackNavigator } from 'react-navigation';
+import routeConfig from './src/routeConfig';
 
-export default SvgAnimation;
+export default StackNavigator(routeConfig);

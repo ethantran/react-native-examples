@@ -11,7 +11,8 @@ import type { AnimatedListener } from '../animatedListener';
 type Pie = d3.Pie;
 type PieArcDatum = d3.PieArcDatum;
 type Props = {
-    arcProps: (arc: PieArcDatum, i: number) => Object
+    arcProps: (arc: PieArcDatum, i: number) => Object,
+    renderArc: (arc: PieArcDatum, i: number) => ?ReactElement<any>
 };
 
 export const args = [
@@ -39,7 +40,8 @@ function getArcData(generator: Pie, data): PieArcDatum[] {
 }
 
 const defaultProps = {
-    arcProps: () => ({})
+    arcProps: () => ({}),
+    renderArc: null
 };
 
 class SvgD3ShapePie extends Component {
@@ -62,9 +64,9 @@ class SvgD3ShapePie extends Component {
         }
         if (argChanged || props._listener) {
             const arcData = getArcData(this.generator, this.data.values);
-            arcData.forEach((arcDataItem, i) => {
-                const component = this._components[arcDataItem.index];
-                component && component.setNativeProps(arcDataItem);
+            arcData.forEach((arc, i) => {
+                const component = this._components[arc.index];
+                component && component.setNativeProps(arc);
             });
         }
         this._component && this._component.setNativeProps(props);
@@ -88,26 +90,34 @@ class SvgD3ShapePie extends Component {
     componentWillUnmount() {
         removeListeners(this.data);
     }
+    renderArc = (arc, i) => {
+        return (
+            <D3ShapeArc
+                key={arc.index}
+                ref={component => (this._components[arc.index] = component)}
+                {...arc}
+                {...this.props.arcProps(arc, i)}
+            />
+        );
+    };
     render() {
         const filteredProps = omit(this.props, args);
         const arcData = getArcData(this.generator, this.data.values);
+        const renderArc = this.props.renderArc || this.renderArc;
         return (
             <G
                 ref={component => (this._component = component)}
                 {...filteredProps}
             >
-                {arcData.map((arcDataItem, i) => {
-                    return (
-                        <D3ShapeArc
-                            key={arcDataItem.index}
-                            ref={component =>
-                                (this._components[
-                                    arcDataItem.index
-                                ] = component)}
-                            {...arcDataItem}
-                            {...this.props.arcProps(arcDataItem, i)}
-                        />
-                    );
+                {arcData.map((arc, i) => {
+                    const element = renderArc(arc, i);
+                    if (element) {
+                        return React.cloneElement(element, {
+                            ref: component =>
+                                (this._components[arc.index] = component)
+                        });
+                    }
+                    return element;
                 })}
             </G>
         );

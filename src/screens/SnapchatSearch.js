@@ -1,3 +1,4 @@
+// BUG: SVG ClipPath and Images do not work
 import React, { Component } from 'react';
 import { StyleSheet, ScrollView, View, Text, TextInput } from 'react-native';
 import loremipsum from 'lorem-ipsum-react-native';

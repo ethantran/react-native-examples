@@ -1,3 +1,10 @@
+// @flow
+/**
+ * BUG: startOffset not working not even with setState
+ * BUG: does not animate unless you have a fill or stroke
+ */
+// https://github.com/react-native-community/react-native-svg/blob/master/lib/extract/extractText.js
+
 import React, { Component } from 'react';
 import { Animated } from 'react-native';
 import pick from 'lodash/pick';
@@ -7,20 +14,8 @@ import defaults from 'lodash/defaults';
 import AnimatedSvgBrushFix from './AnimatedSvgBrushFix';
 import AnimatedSvgPropStringFix from './AnimatedSvgPropStringFix';
 import AnimatedSvgTransformFix from './AnimatedSvgTransformFix';
-
-/**
- * Problem: Animating dx and dy with a list of values is not possible, fontSize and startOffset do not animate
- * Solution: Combine props dx0, dx1, dx2, ..., dxn into deltaX array, use extractText, and use setNativeProps
- * BUG: startOffset not working not even with setState
- * BUG: does not animate unless you have a fill or stroke
- * TODO: alternative api for dxn and dyn. instead of props just send them as children <TextDelta x={} y={} />, use addListener and remove them in render
- */
-
-// https://github.com/react-native-community/react-native-svg/blob/master/lib/extract/extractText.js
-
-function getKeysWithString(props, str) {
-    return Object.keys(props).filter(key => key.includes(str));
-}
+import { listen, removeListeners } from '../animatedListener';
+import type { AnimatedListener } from '../animatedListener';
 
 // modified for setNativeProps
 const fontRegExp = /^\s*((?:(?:normal|bold|italic)\s+)*)(?:(\d+(?:\.\d+)?)[ptexm%]*(?:\s*\/.*?)?\s+)?\s*"?([^"]*)/i;
@@ -33,9 +28,12 @@ function extractSingleFontFamily(fontFamilyString) {
     // SVG on the web allows for multiple font-families to be specified.
     // For compatibility, we extract the first font-family, hoping
     // we'll get a match.
-    return fontFamilyString ? fontFamilyString.split(commaReg)[0]
-        .replace(fontFamilyPrefix, '')
-        .replace(fontFamilySuffix, '') : null;
+    return fontFamilyString
+        ? fontFamilyString
+              .split(commaReg)[0]
+              .replace(fontFamilyPrefix, '')
+              .replace(fontFamilySuffix, '')
+        : null;
 }
 function parseFontString(font) {
     if (cachedFontObjectsFromString.hasOwnProperty(font)) {
@@ -73,21 +71,25 @@ function extractFont(props, prevProps) {
     ownedFont = pickBy(ownedFont, prop => !isNil(prop));
     return defaults(ownedFont, font);
 }
-function _parseDelta(delta) {
+function parseDelta(delta) {
     if (typeof delta === 'string') {
         if (isNaN(+delta)) {
-            return delta.trim().replace(commaReg, ' ').split(spaceReg).map(d => +d || 0);
+            return delta
+                .trim()
+                .replace(commaReg, ' ')
+                .split(spaceReg)
+                .map(d => +d || 0);
         } else {
             return [+delta];
         }
     } else if (typeof delta === 'number') {
         return [delta];
+    } else if (Array.isArray(delta)) {
+        // have to clone array for mutable animation updates
+        return [...delta];
     } else {
         return [];
     }
-}
-function parseDelta(key, nextProps, prevProps) {
-    return _parseDelta(nextProps[key]).length ? _parseDelta(nextProps[key]) : _parseDelta(prevProps[key]);
 }
 
 function getPosition(key, nextProps, prevProps) {
@@ -108,56 +110,52 @@ function getStartOffset(props, prevProps) {
 
 const KEYS = [
     'startOffset',
-    'fontSize', 'fontFamily', 'fontWeight', 'fontStyle',
-    'positionX', 'positionY', 'x', 'y',
-    'content', 'children',
-    'deltaX', 'deltaY'
+    'fontSize',
+    'fontFamily',
+    'fontWeight',
+    'fontStyle',
+    'positionX',
+    'positionY',
+    'x',
+    'y',
+    'content',
+    'children',
+    'deltaX',
+    'deltaY'
 ];
+
+const defaultProps = {
+    fill: '#000'
+};
 
 export default function SvgTextFix(WrappedComponent, { container } = {}) {
     WrappedComponent = AnimatedSvgBrushFix(WrappedComponent);
     WrappedComponent = AnimatedSvgPropStringFix(WrappedComponent);
     WrappedComponent = AnimatedSvgTransformFix(WrappedComponent);
     class HOComponent extends Component {
-        static defaultProps = {
-            fill: '#000'
-        }
+        dx: AnimatedListener;
+        dy: AnimatedListener;
+        static defaultProps = typeof defaultProps;
         constructor(props) {
             super(props);
-            this.state = {};
             this.updateCache(props);
+            this.dx = listen(props.dx, _ => this.setNativeProps({ _dx: true }));
+            this.dy = listen(props.dy, _ => this.setNativeProps({ _dy: true }));
         }
         updateCache(props) {
-            this.deltaXKeys = getKeysWithString(props, 'dx');
-            this.deltaYKeys = getKeysWithString(props, 'dy');
-            this.totalKeys = [...KEYS, ...this.deltaXKeys, ...this.deltaYKeys];
-            this.prevDeltaXProps = pick(props, this.deltaXKeys);
-            this.prevDeltaYProps = pick(props, this.deltaYKeys);
             this.prevProps = pick(props, KEYS);
         }
-        setNativeProps = (props) => {
+        setNativeProps = props => {
             if (props.dx != null) {
-                props.deltaX = parseDelta('dx', props, this.prevDeltaXProps);
-            }
-            // if some dxn exists in props that means we need to recreate deltaX
-            else if (this.deltaXKeys.some((key, index) => props[key] != null)) {
-                props.deltaX = this.createDeltaArray(props, this.prevDeltaXProps, this.deltaXKeys);
-            }
-            // cache dynamic values since all deltas are required to generate a new delta list
-            if (props.deltaX != null) {
-                this.prevDeltaXProps = Object.assign(this.prevDeltaXProps, pick(props, this.deltaXKeys));
+                props.deltaX = parseDelta(props.dx);
+            } else if (props._dx) {
+                props.deltaX = parseDelta(this.dx.values);
             }
 
             if (props.dy != null) {
-                props.deltaY = parseDelta('dy', props, this.prevDeltaYProps);
-            }
-            // if some dyn exists in props that means we need to recreate deltaY
-            else if (this.deltaYKeys.some((key, index) => props[key] != null)) {
-                props.deltaY = this.createDeltaArray(props, this.prevDeltaYProps, this.deltaYKeys);
-            }
-            // cache dynamic values since all deltas are required to generate a new delta list
-            if (props.deltaY) {
-                this.prevDeltaYProps = Object.assign(this.prevDeltaYProps, pick(props, this.totalDeltaYKeys));
+                props.deltaY = parseDelta(props.dy);
+            } else if (props._dy) {
+                props.deltaY = parseDelta(this.dy.values);
             }
 
             if (props.startOffset != null) {
@@ -180,33 +178,46 @@ export default function SvgTextFix(WrappedComponent, { container } = {}) {
                 this.prevProps.positionY = props.positionY;
                 this.prevProps.y = props.y;
             }
+
             if (props.fontSize != null) {
                 props.font = extractFont(props, this.prevProps);
             }
+
             this._component && this._component.setNativeProps(props);
-        }
-        createDeltaArray = (props, prevProps, keys) => {
-            return keys.map((key) => {
-                const newDelta = props[key];
-                if (typeof newDelta === 'number') {
-                    return newDelta;
-                }
-                return +newDelta || prevProps[key] || 0;
-            });
-        }
+        };
         componentWillReceiveProps(nextProps) {
             this.updateCache(nextProps);
+            if (nextProps.dx !== this.props.dx) {
+                removeListeners(this.dx);
+                this.dx = listen(nextProps.dx, _ =>
+                    this.setNativeProps({ _dx: true })
+                );
+            }
+            if (nextProps.dy !== this.props.dy) {
+                removeListeners(this.dy);
+                this.dy = listen(nextProps.dy, _ =>
+                    this.setNativeProps({ _dy: true })
+                );
+            }
+        }
+        componentWillUnmount() {
+            removeListeners(this.dx);
+            removeListeners(this.dy);
         }
         render() {
+            const deltaX = parseDelta(this.dx.values);
+            const deltaY = parseDelta(this.dy.values);
             return (
                 <WrappedComponent
                     ref={component => (this._component = component)}
                     {...this.props}
-                    {...this.state}
+                    deltaX={deltaX}
+                    deltaY={deltaY}
                 />
             );
         }
     }
+    HOComponent.defaultProps = defaultProps;
     HOComponent = AnimatedSvgTransformFix(HOComponent);
     HOComponent = Animated.createAnimatedComponent(HOComponent);
     return HOComponent;

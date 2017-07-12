@@ -1,39 +1,20 @@
 import React, { Component } from 'react';
-import { View, Button } from 'react-native';
+import { ScrollView, Button } from 'react-native';
+import routeConfig from '../routeConfig';
 
-export default class Main extends Component {
+export default class MainScreen extends Component {
     render() {
+        const { Main, ...routes } = routeConfig;
         return (
-            <View style={{ marginTop: 20 }}>
-                <Button
-                    title="LolaTravelChat"
-                    onPress={() => this.props.navigation.navigate('LolaTravelChat')}
-                />
-                <Button
-                    title="OperatorChat"
-                    onPress={() => this.props.navigation.navigate('OperatorChat')}
-                />
-                <Button
-                    title="FlipboardCover"
-                    onPress={() => this.props.navigation.navigate('FlipboardCover')}
-                />
-                <Button
-                    title="SnapchatSearch"
-                    onPress={() => this.props.navigation.navigate('SnapchatSearch')}
-                />
-                <Button
-                    title="AnchorWalkthrough"
-                    onPress={() => this.props.navigation.navigate('AnchorWalkthrough')}
-                />
-                <Button
-                    title="PixelBlurAnimation"
-                    onPress={() => this.props.navigation.navigate('PixelBlurAnimation')}
-                />
-                <Button
-                    title="SvgAnimation"
-                    onPress={() => this.props.navigation.navigate('SvgAnimation')}
-                />
-            </View>
+            <ScrollView style={{ marginTop: 20 }}>
+                {Object.keys(routes).map(route => (
+                    <Button
+                        key={route}
+                        title={route}
+                        onPress={() => this.props.navigation.navigate(route)}
+                    />
+                ))}
+            </ScrollView>
         );
     }
 }
