@@ -21,7 +21,9 @@ export default function SvgGradientFix(WrappedComponent) {
             this.state = this.getStateForChildren(this.props);
         }
         addListenerForStopProp = (prop, stateKey, isClamp) => {
-            const addListener = prop._parent ? prop._parent.addListener.bind(prop._parent) : prop.addListener.bind(prop);
+            const addListener = prop._parent
+                ? prop._parent.addListener.bind(prop._parent)
+                : prop.addListener.bind(prop);
             const interpolator = prop._interpolation;
             let callback = e => e;
             if (interpolator) {
@@ -32,61 +34,64 @@ export default function SvgGradientFix(WrappedComponent) {
                 callback = _value => clamp(prevCallback(_value));
             }
             let prevCallback = callback;
-            callback = e => this.setState({ [stateKey]: prevCallback(e.value).toString() });
+            callback = e =>
+                this.setState({ [stateKey]: prevCallback(e.value).toString() });
             return addListener(callback);
-        }
-        getStateForChildren = (props) => {
+        };
+        getStateForChildren = props => {
             let newState = {};
             React.Children.forEach(props.children, (child, index) => {
-                childPropKeys.forEach((key) => {
+                childPropKeys.forEach(key => {
                     const prop = child.props[key];
                     const stateKey = 'child' + index + key;
-                    if (prop instanceof Animated.Value || prop instanceof Animated.Interpolation) {
+                    if (
+                        prop instanceof Animated.Value ||
+                        prop instanceof Animated.Interpolation
+                    ) {
                         const isClamp = key === 'offset';
                         let value = prop.__getValue();
                         value = isClamp ? clamp(value) : value;
                         value = value.toString();
                         newState[stateKey] = value;
-                        const listener = this.addListenerForStopProp(prop, stateKey, isClamp);
-                        this.listeners.push(listener);
+                        const listener = this.addListenerForStopProp(
+                            prop,
+                            stateKey,
+                            isClamp
+                        );
+                        this.listeners.push({ id: listener, object: prop });
                     } else {
                         newState[stateKey] = prop;
                     }
                 });
             });
             return newState;
-        }
-        removeAllListeners = (children) => {
-            React.Children.forEach(children, (child) => {
-                childPropKeys.forEach((key) => {
-                    const prop = child.props[key];
-                    if (prop instanceof Animated.Value) {
-                        this.listeners.forEach(prop.removeListener);
-                    } else if (prop instanceof Animated.Interpolation) {
-                        this.listeners.forEach(prop._parent.removeListener);
-                    }
-                });
+        };
+        removeAllListeners = () => {
+            this.listeners.forEach(({ id, object }) => {
+                if (object._parent) {
+                    object._parent.removeListener(id);
+                } else {
+                    object.removeListener(id);
+                }
             });
-            this.listeners = [];
-        }
+        };
         componentWillReceiveProps(nextProps) {
             if (nextProps.children !== this.props.children) {
-                this.removeAllListeners(this.props.children);
+                this.removeAllListeners();
+                this.listeners = [];
                 this.setState(this.getStateForChildren(nextProps));
             }
         }
         componentWillUnmount() {
-            this.removeAllListeners(this.props.children);
+            this.removeAllListeners();
         }
         replaceChild = (child, index) => {
             const props = childPropKeys.reduce((acc, key) => {
                 acc[key] = this.state['child' + index + key].toString();
                 return acc;
             }, {});
-            return (
-                <Svg.Stop {...props} />
-            );
-        }
+            return <Svg.Stop {...props} />;
+        };
         render() {
             const { children, ...props } = this.props;
             return (
