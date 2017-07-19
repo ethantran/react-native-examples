@@ -65,6 +65,5 @@ export default ({
             y -= bbox.height;
         }
     }
-
     return { x, y };
 };

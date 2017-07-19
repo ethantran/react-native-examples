@@ -15,35 +15,49 @@ const defaultProps = {
 };
 
 // https://gist.github.com/gka/7469245
-function approximateCharWidth(w, c) {
+export function approximateCharWidth(c, { fontSize = 12, adjust } = {}) {
+    let width;
     if (c === 'W' || c === 'M') {
-        w += 15;
+        width = 15;
     } else if (c === 'w' || c === 'm') {
-        w += 12;
+        width = 12;
     } else if (c === 'I' || c === 'i' || c === 'l' || c === 't' || c === 'f') {
-        w += 4;
+        width = 4;
     } else if (c === 'r') {
-        w += 8;
+        width = 8;
     } else if (c === c.toUpperCase()) {
-        w += 12;
+        width = 12;
     } else {
-        w += 10;
+        width = 10;
     }
-    return w;
+    // adjust based on fontSize
+    width *= fontSize / 12;
+    // adjust based on custom function
+    if (adjust) {
+        width = adjust(width, c);
+    }
+    return width;
 }
 
-function approximateTextWidth(s) {
-    return s.split('').reduce(approximateCharWidth, 0);
+export function approximateTextWidth(s, options) {
+    return s.split('').reduce((w, c) => {
+        const width = approximateCharWidth(c, options);
+        w += width;
+        return w;
+    }, 0);
 }
 
-export function getLines({ text, width }) {
+export function getLines({ text, width }, options) {
     const words = text.split(/[ \t\r\n]+/).reverse().filter(w => w !== '');
     let word;
     let lines = [];
     let line = [];
     while ((word = words.pop())) {
         line.push(word);
-        if (approximateTextWidth(line.join(' ')) > width && line.length > 1) {
+        if (
+            approximateTextWidth(line.join(' '), options) > width &&
+            line.length > 1
+        ) {
             line.pop();
             lines.push(line.join(' '));
             line = [word];

@@ -141,13 +141,11 @@ const arrow = {
 const dot = {
     note: {
         label: loremipsum({ count: 5, units: 'words' }),
-        title: 'dot+curve',
+        title: 'dot',
         wrap
     },
     connector: {
-        end: 'dot',
-        type: 'curve',
-        points: [[100, 14], [190, 52]]
+        end: 'dot'
     },
     x,
     y: y + dy * ++i,

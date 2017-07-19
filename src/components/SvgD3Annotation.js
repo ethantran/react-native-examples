@@ -13,13 +13,20 @@ import noteAlignment, {
 } from '../noteAlignment';
 import Annotation from '../Annotation';
 import AnnotationCollection from '../AnnotationCollection';
-import { getLines } from './SvgTextWrap';
+import {
+    getLines,
+    approximateTextWidth,
+    approximateCharWidth
+} from './SvgTextWrap';
 
-const { G, Path, Text, TSpan } = Svg;
+const { G, Path, Text, TSpan, Rect } = Svg;
 
 const a = {
     select: () => {}
 };
+
+// crude adjustment to text length estimate
+const adjust = (width, c) => width - width / 3;
 
 const Note = ({
     note,
@@ -29,24 +36,36 @@ const Note = ({
     fontSize,
     annotationColor,
     renderTitle,
-    renderLabel
+    renderLabel,
+    bgProps,
+    noteContentProps = {},
+    noteLineProps = {},
+    ...props
 }) => {
-    const titleLines = getLines({
-        text: note.title,
-        width: note.wrap
-    });
-    const labelLines = getLines({
-        text: note.label,
-        width: note.wrap
-    });
+    const titleLines = getLines(
+        {
+            text: note.title,
+            width: note.wrap
+        },
+        { fontSize, adjust }
+    );
+    const labelLines = getLines(
+        {
+            text: note.label,
+            width: note.wrap
+        },
+        { fontSize, adjust }
+    );
 
     // have to do this rough calculation since there is no way to get bbox
     const bbox = {
+        x: 0,
+        y: 0,
         width: note.wrap,
         height: (titleLines.length + labelLines.length) * fontSize
     };
     return (
-        <G id="note" translateX={offset.x} translateY={offset.y}>
+        <G id="note" translateX={offset.x} translateY={offset.y} {...props}>
             <NoteContent
                 note={note}
                 type={type}
@@ -59,6 +78,8 @@ const Note = ({
                 renderLabel={renderLabel}
                 titleLines={titleLines}
                 labelLines={labelLines}
+                bgProps={bgProps}
+                {...noteContentProps}
             />
             <NoteLine
                 note={note}
@@ -66,6 +87,7 @@ const Note = ({
                 offset={offset}
                 bbox={bbox}
                 annotationColor={annotationColor}
+                {...noteLineProps}
             />
         </G>
     );
@@ -82,7 +104,9 @@ const NoteContent = ({
     renderTitle,
     renderLabel,
     titleLines,
-    labelLines
+    labelLines,
+    bgProps = {},
+    ...props
 }) => {
     const noteData = note;
     const typeSettings = type.typeSettings.note;
@@ -111,7 +135,13 @@ const NoteContent = ({
     // const offsetCornerY = y + annotation.dy;
 
     return (
-        <G translateX={translateX} translateY={translateY}>
+        <G translateX={translateX} translateY={translateY} {...props}>
+            <Rect
+                width={bbox.width}
+                height={bbox.height}
+                fill="none"
+                {...bgProps}
+            />
             <Text fontSize={fontSize} fill={annotationColor}>
                 {titleLines.map(renderTitle)}
                 {labelLines.map(renderLabel)}
@@ -137,6 +167,7 @@ const NoteLine = ({ note, type, offset, bbox, annotationColor, ...props }) => {
                 bbox={bbox}
                 fill="none"
                 stroke={annotationColor}
+                {...props}
             />
         );
     } else if (lineType === 'horizontal') {
@@ -145,6 +176,7 @@ const NoteLine = ({ note, type, offset, bbox, annotationColor, ...props }) => {
                 {...noteParams}
                 fill="none"
                 stroke={annotationColor}
+                {...props}
             />
         );
     }
@@ -449,13 +481,23 @@ const Dot = ({ data, annotationColor, dotRadius, ...props }) => {
 type Props = {
     fontSize: number,
     annotationColor: string,
-    dotRadius: number
+    dotRadius: number,
+    connectorProps: Object,
+    subjectProps: Object,
+    noteProps: Object,
+    noteContentProps: Object,
+    noteLineProps: Object
 };
 
 const defaultProps = {
     fontSize: 12,
     annotationColor: 'black',
-    dotRadius: 5
+    dotRadius: 5,
+    connectorProps: {},
+    subjectProps: {},
+    noteProps: {},
+    noteContentProps: {},
+    noteLineProps: {}
 };
 
 export const args = ['type', 'annotations'];
@@ -494,6 +536,7 @@ const Connector = ({ annotation, annotationColor, ...props }) => {
                 })}
                 fill="none"
                 stroke={annotationColor}
+                {...props}
             />
         );
     } else if (connectorType === 'elbow') {
@@ -503,6 +546,7 @@ const Connector = ({ annotation, annotationColor, ...props }) => {
                 d={createLine({ data })}
                 fill="none"
                 stroke={annotationColor}
+                {...props}
             />
         );
     } else {
@@ -512,6 +556,7 @@ const Connector = ({ annotation, annotationColor, ...props }) => {
                 d={createLine({ data })}
                 fill="none"
                 stroke={annotationColor}
+                {...props}
             />
         );
     }
@@ -549,7 +594,7 @@ const ConnectorEnd = ({ type, data, annotation, ...props }) => {
     return null;
 };
 
-const Subject = ({ type, subject, annotationColor }) => {
+const Subject = ({ type, subject, annotationColor, ...props }) => {
     const subjectData = subject;
     const typeSettings = type.typeSettings.subject;
     const subjectType = typeSettings.type;
@@ -559,17 +604,23 @@ const Subject = ({ type, subject, annotationColor }) => {
             <SubjectCircle
                 {...subjectParams}
                 annotationColor={annotationColor}
+                {...props}
             />
         );
     } else if (subjectType === 'rect') {
         return (
-            <SubjectRect {...subjectParams} annotationColor={annotationColor} />
+            <SubjectRect
+                {...subjectParams}
+                annotationColor={annotationColor}
+                {...props}
+            />
         );
     } else if (subjectType === 'threshold') {
         return (
             <SubjectThreshold
                 {...subjectParams}
                 annotationColor={annotationColor}
+                {...props}
             />
         );
     } else if (subjectType === 'badge') {
@@ -577,6 +628,7 @@ const Subject = ({ type, subject, annotationColor }) => {
             <SubjectBadge
                 {...subjectParams}
                 annotationColor={annotationColor}
+                {...props}
             />
         );
     }
@@ -725,7 +777,16 @@ class SvgD3Annotation extends Component {
         this.generator = createGenerator(props);
     }
     renderAnnotation = (annotation, i) => {
-        const { annotationColor, fontSize, dotRadius } = this.props;
+        const {
+            annotationColor,
+            fontSize,
+            dotRadius,
+            connectorProps,
+            subjectProps,
+            noteProps,
+            noteContentProps,
+            noteLineProps
+        } = this.props;
         const { position, type, subject, note, offset } = annotation;
         return (
             <G key={i} translateX={position.x} translateY={position.y}>
@@ -734,11 +795,13 @@ class SvgD3Annotation extends Component {
                     annotationColor={annotationColor}
                     dotRadius={dotRadius}
                     fontSize={fontSize}
+                    {...connectorProps}
                 />
                 <Subject
                     subject={subject}
                     type={type}
                     annotationColor={annotationColor}
+                    {...subjectProps}
                 />
                 <Note
                     note={note}
@@ -748,6 +811,9 @@ class SvgD3Annotation extends Component {
                     annotationColor={annotationColor}
                     renderTitle={this.renderTitle}
                     renderLabel={this.renderLabel}
+                    noteContentProps={noteContentProps}
+                    noteLineProps={noteLineProps}
+                    {...noteProps}
                 />
             </G>
         );
