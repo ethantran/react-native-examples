@@ -7,8 +7,6 @@ import { svgPathProperties } from 'svg-path-properties';
 
 import randomColor from '../randomColor';
 import randomNumber from '../randomNumber';
-import Line from '../components/AnimatedSvgD3ShapeLine';
-import Area from '../components/AnimatedSvgD3ShapeArea';
 import Path from '../components/AnimatedSvgPath';
 import Circle from '../components/AnimatedSvgCircle';
 
@@ -22,7 +20,7 @@ const radius = 5;
 const lineStrokeWidth = 5;
 const pointStrokeWidth = 3;
 
-function createProps(path) {
+function createLineProps(path) {
     const properties = svgPathProperties(path);
     const length = properties.getTotalLength();
     return {
@@ -58,13 +56,8 @@ export default class StaggeredLineAnimation extends Component {
             .curve(curve)
             .x(d => x(d.index))
             .y(d => y(d.value));
-        const areaGenerator = d3Shape
-            .line()
-            .curve(curve)
-            .x(d => x(d.index))
-            .y(d => y(d.value));
-        this.path = createProps(lineGenerator(data));
-        this.path2 = createProps(lineGenerator(data2));
+        this.linePath = createLineProps(lineGenerator(data));
+        this.linePath2 = createLineProps(lineGenerator(data2));
         this.points = data.map(d => ({
             r: new Animated.Value(0),
             cx: x(d.index),
@@ -89,7 +82,7 @@ export default class StaggeredLineAnimation extends Component {
         const animation = Animated.sequence([
             Animated.delay(1000),
             Animated.parallel([
-                Animated.timing(this.path.strokeDashoffset, {
+                Animated.timing(this.linePath.strokeDashoffset, {
                     toValue: 0,
                     duration: strokeDashoffsetDuration
                 }),
@@ -104,7 +97,7 @@ export default class StaggeredLineAnimation extends Component {
                 )
             ]),
             Animated.parallel([
-                Animated.timing(this.path2.strokeDashoffset, {
+                Animated.timing(this.linePath2.strokeDashoffset, {
                     toValue: 0,
                     duration: strokeDashoffsetDuration
                 }),
@@ -129,19 +122,23 @@ export default class StaggeredLineAnimation extends Component {
             <View style={{ backgroundColor: 'white' }}>
                 <Svg width={width} height={height}>
                     <Path
-                        {...this.path}
+                        {...this.linePath}
                         stroke={color}
                         strokeWidth={lineStrokeWidth}
                         fill="none"
                     />
                     <Path
-                        {...this.path2}
+                        {...this.linePath2}
                         stroke={color2}
                         strokeWidth={lineStrokeWidth}
                         fill="none"
                     />
-                    {this.points.map(point => <Circle {...point} />)}
-                    {this.points2.map(point => <Circle {...point} />)}
+                    {this.points.map((point, i) =>
+                        <Circle key={'point' + i} {...point} />
+                    )}
+                    {this.points2.map((point, i) =>
+                        <Circle key={'point_2' + i} {...point} />
+                    )}
                 </Svg>
             </View>
         );

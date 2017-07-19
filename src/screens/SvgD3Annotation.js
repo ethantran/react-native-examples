@@ -142,7 +142,8 @@ const dot = {
     note: {
         label: loremipsum({ count: 5, units: 'words' }),
         title: 'dot',
-        wrap
+        wrap,
+        align: 'left'
     },
     connector: {
         end: 'dot'

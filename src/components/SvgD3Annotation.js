@@ -13,11 +13,7 @@ import noteAlignment, {
 } from '../noteAlignment';
 import Annotation from '../Annotation';
 import AnnotationCollection from '../AnnotationCollection';
-import {
-    getLines,
-    approximateTextWidth,
-    approximateCharWidth
-} from './SvgTextWrap';
+import { getLines } from './SvgTextWrap';
 
 const { G, Path, Text, TSpan, Rect } = Svg;
 

@@ -19,7 +19,10 @@ export default class StaggeredMapAnimation extends Component {
         const { width, height } = Dimensions.get('window');
         this.points = Array(8)
             .fill()
-            .map(_ => [randomNumber(0, width), randomNumber(0, height)]);
+            .map(_ => [
+                randomNumber(100, width - 100),
+                randomNumber(50, 200)
+            ]);
         this.r = this.points.map(_ => new Animated.Value(0));
     }
     async componentWillMount() {
@@ -38,7 +41,7 @@ export default class StaggeredMapAnimation extends Component {
             Animated.stagger(
                 100,
                 this.r.map(animValue =>
-                    Animated.spring(animValue, { toValue: 30 })
+                    Animated.spring(animValue, { toValue: 10 })
                 )
             )
         ]);
@@ -58,18 +61,19 @@ export default class StaggeredMapAnimation extends Component {
                                 stroke="#fff"
                             />
                         )}
-                        {this.points.map((point, i) =>
-                            <Circle
-                                r={this.r[i]}
-                                cx={point[0]}
-                                cy={point[1]}
-                                fillOpacity={0.5}
-                                fill="red"
-                                stroke="red"
-                                strokeWidth={10}
-                            />
-                        )}
                     </Svg.G>
+                    {this.points.map((point, i) =>
+                        <Circle
+                            key={i}
+                            r={this.r[i]}
+                            cx={point[0]}
+                            cy={point[1]}
+                            fillOpacity={0.5}
+                            fill="red"
+                            stroke="red"
+                            strokeWidth={5}
+                        />
+                    )}
                 </Svg>
             </View>
         );
