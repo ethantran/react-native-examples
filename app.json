@@ -1,5 +1,8 @@
 {
-  "expo": {
-    "sdkVersion": "18.0.0"
-  }
+    "expo": {
+        "sdkVersion": "18.0.0",
+        "name": "react-native-examples",
+        "description": "UI Patterns, Animated, SVG, D3, Flubber, and more. Source at  https://github.com/ethantran/react-native-examples",
+        "slug": "react-native-examples"
+    }
 }
