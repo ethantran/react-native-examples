@@ -63,6 +63,14 @@
     component-type "^1.2.1"
     join-component "^1.1.0"
 
+"@types/d3-dispatch@1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@types/d3-dispatch/-/d3-dispatch-1.0.4.tgz#91b8de6198053efc46788ad5f27182bcc42335b5"
+
+"@types/d3-selection@1.0.10":
+  version "1.0.10"
+  resolved "https://registry.yarnpkg.com/@types/d3-selection/-/d3-selection-1.0.10.tgz#dcfb0ddfcdfb1ad26aea4351323771e1aea96e84"
+
 Base64@~0.1.3:
   version "0.1.4"
   resolved "https://registry.yarnpkg.com/Base64/-/Base64-0.1.4.tgz#e9f6c6bef567fd635ea4162ab14dd329e74aa6de"
@@ -1803,6 +1811,10 @@ d3-array@1, d3-array@^1.1.1, d3-array@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/d3-array/-/d3-array-1.2.0.tgz#147d269720e174c4057a7f42be8b0f3f2ba53108"
 
+d3-axis@^1.0.8:
+  version "1.0.8"
+  resolved "https://registry.yarnpkg.com/d3-axis/-/d3-axis-1.0.8.tgz#31a705a0b535e65759de14173a31933137f18efa"
+
 d3-chord@^1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/d3-chord/-/d3-chord-1.0.4.tgz#7dec4f0ba886f713fe111c45f763414f6f74ca2c"
@@ -1823,6 +1835,21 @@ d3-contour@^1.1.1:
   resolved "https://registry.yarnpkg.com/d3-contour/-/d3-contour-1.1.1.tgz#2fc79994c13437dfa8fdaf22ced8cd1468f81a24"
   dependencies:
     d3-array "^1.1.1"
+
+d3-dispatch@1, d3-dispatch@1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/d3-dispatch/-/d3-dispatch-1.0.2.tgz#5b511e79a46a1f89492841c0a8f656687d5daa0a"
+
+d3-drag@1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/d3-drag/-/d3-drag-1.0.2.tgz#d634cc3f7689f99dd03fd7eb1af2945c0f4339ad"
+  dependencies:
+    d3-dispatch "1"
+    d3-selection "1"
+
+d3-ease@1:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/d3-ease/-/d3-ease-1.0.3.tgz#68bfbc349338a380c44d8acc4fbc3304aa2d8c0e"
 
 d3-format@1:
   version "1.2.0"
@@ -1892,11 +1919,33 @@ d3-scale@^1.0.6:
     d3-time "1"
     d3-time-format "2"
 
+d3-selection@1, d3-selection@1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/d3-selection/-/d3-selection-1.0.2.tgz#ae662afd4702ac9c5da039b2107a1764fa1c9070"
+
+d3-shape@1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/d3-shape/-/d3-shape-1.0.4.tgz#145ee100ccbec42f8e3f1996cd05c786f79fe1c6"
+  dependencies:
+    d3-path "1"
+
 d3-shape@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/d3-shape/-/d3-shape-1.2.0.tgz#45d01538f064bafd05ea3d6d2cb748fd8c41f777"
   dependencies:
     d3-path "1"
+
+d3-svg-annotation@^1.18.0:
+  version "1.18.0"
+  resolved "https://registry.yarnpkg.com/d3-svg-annotation/-/d3-svg-annotation-1.18.0.tgz#62e992ca61cd788369ddc7272b4a4e1cdc9f8352"
+  dependencies:
+    "@types/d3-dispatch" "1.0.4"
+    "@types/d3-selection" "1.0.10"
+    d3-dispatch "1.0.2"
+    d3-drag "1.0.2"
+    d3-selection "1.0.2"
+    d3-shape "1.0.4"
+    d3-transition "1.0.3"
 
 d3-time-format@2:
   version "2.0.5"
@@ -1907,6 +1956,21 @@ d3-time-format@2:
 d3-time@1:
   version "1.0.7"
   resolved "https://registry.yarnpkg.com/d3-time/-/d3-time-1.0.7.tgz#94caf6edbb7879bb809d0d1f7572bc48482f7270"
+
+d3-timer@1:
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/d3-timer/-/d3-timer-1.0.6.tgz#4044bf15d7025c06ce7d1149f73cd07b54dbd784"
+
+d3-transition@1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/d3-transition/-/d3-transition-1.0.3.tgz#91dc986bddb30973639320a85db72ce4ab1a27bb"
+  dependencies:
+    d3-color "1"
+    d3-dispatch "1"
+    d3-ease "1"
+    d3-interpolate "1"
+    d3-selection "1"
+    d3-timer "1"
 
 d3-voronoi@^1.1.2:
   version "1.1.2"
@@ -4020,6 +4084,10 @@ match-require@^2.0.0:
   dependencies:
     uuid "^3.0.0"
 
+matter-js@^0.10.0:
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/matter-js/-/matter-js-0.10.0.tgz#bcfb4afc2354c5980cb9701dc15edf07274742b2"
+
 md5-file@^3.1.1:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/md5-file/-/md5-file-3.1.1.tgz#db3c92c09bbda5c2de883fa5490dd711fddbbab9"
@@ -4740,6 +4808,12 @@ react-fix-it@^0.3.3:
   resolved "https://registry.yarnpkg.com/react-fix-it/-/react-fix-it-0.3.3.tgz#c3debc91c43660010b0ef78fc3b730dbb1f9e7fd"
   dependencies:
     react-component-errors "^0.0.6"
+
+react-game-kit@^0.0.2:
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/react-game-kit/-/react-game-kit-0.0.2.tgz#61f62343d2473a1a5d6eb6a4fc5627dad26c0f50"
+  dependencies:
+    matter-js "^0.10.0"
 
 react-native-branch@2.0.0-beta.3:
   version "2.0.0-beta.3"
@@ -5815,11 +5889,32 @@ topo@2.x.x:
   dependencies:
     hoek "4.x.x"
 
-topojson-client@^3.0.0:
+topojson-client@3, topojson-client@3.0.0, topojson-client@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/topojson-client/-/topojson-client-3.0.0.tgz#1f99293a77ef42a448d032a81aa982b73f360d2f"
   dependencies:
     commander "2"
+
+topojson-server@3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/topojson-server/-/topojson-server-3.0.0.tgz#378e78e87c3972a7b5be2c5d604369b6bae69c5e"
+  dependencies:
+    commander "2"
+
+topojson-simplify@3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/topojson-simplify/-/topojson-simplify-3.0.0.tgz#58527d26ca85bd8589b5800f6c10e93885245ae5"
+  dependencies:
+    commander "2"
+    topojson-client "3"
+
+topojson@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/topojson/-/topojson-3.0.0.tgz#c2aca1b76435e801dce3f229586bbd5767115ce3"
+  dependencies:
+    topojson-client "3.0.0"
+    topojson-server "3.0.0"
+    topojson-simplify "3.0.0"
 
 touch@0.0.3:
   version "0.0.3"

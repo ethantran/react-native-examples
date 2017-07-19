@@ -3,9 +3,13 @@ import FlipboardCover from './screens/FlipboardCover';
 import LolaTravelChat from './screens/LolaTravelChat';
 import OperatorChat from './screens/OperatorChat';
 import SnapchatSearch from './screens/SnapchatSearch';
+import StaggeredLineAnimation from './screens/StaggeredLineAnimation';
+import StaggeredMapAnimation from './screens/StaggeredMapAnimation';
 import SvgBrushAnimation from './screens/SvgBrushAnimation';
 import SvgCircleAnimation from './screens/SvgCircleAnimation';
+import SvgD3Annotation from './screens/SvgD3Annotation';
 import SvgD3AreaAnimation from './screens/SvgD3AreaAnimation';
+import SvgD3Axis from './screens/SvgD3Axis';
 import SvgD3ChordAnimation from './screens/SvgD3ChordAnimation';
 import SvgD3ClusterBasic from './screens/SvgD3ClusterBasic';
 import SvgD3ContourBasic from './screens/SvgD3ContourBasic';
@@ -35,6 +39,7 @@ import SvgRectAnimation from './screens/SvgRectAnimation';
 import SvgTextAnimation from './screens/SvgTextAnimation';
 import SvgTransformAnimation from './screens/SvgTransformAnimation';
 import SvgTSpanAnimation from './screens/SvgTSpanAnimation';
+import TypingAnimation from './screens/TypingAnimation';
 import Main from './screens/Main';
 export default {
     Main: { screen: Main },
@@ -43,9 +48,13 @@ export default {
     LolaTravelChat: { screen: LolaTravelChat },
     OperatorChat: { screen: OperatorChat },
     SnapchatSearch: { screen: SnapchatSearch },
+    StaggeredLineAnimation: { screen: StaggeredLineAnimation },
+    StaggeredMapAnimation: { screen: StaggeredMapAnimation },
     SvgBrushAnimation: { screen: SvgBrushAnimation },
     SvgCircleAnimation: { screen: SvgCircleAnimation },
+    SvgD3Annotation: { screen: SvgD3Annotation },
     SvgD3AreaAnimation: { screen: SvgD3AreaAnimation },
+    SvgD3Axis: { screen: SvgD3Axis },
     SvgD3ChordAnimation: { screen: SvgD3ChordAnimation },
     SvgD3ClusterBasic: { screen: SvgD3ClusterBasic },
     SvgD3ContourBasic: { screen: SvgD3ContourBasic },
@@ -74,5 +83,6 @@ export default {
     SvgRectAnimation: { screen: SvgRectAnimation },
     SvgTextAnimation: { screen: SvgTextAnimation },
     SvgTransformAnimation: { screen: SvgTransformAnimation },
-    SvgTSpanAnimation: { screen: SvgTSpanAnimation }
+    SvgTSpanAnimation: { screen: SvgTSpanAnimation },
+    TypingAnimation: { screen: TypingAnimation }
 };
