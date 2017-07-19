@@ -3,7 +3,7 @@ UI examples from [pttrns](pttrns.com), [mobile-patterns](www.mobile-patterns.com
 
 Examples of SVG Animation with [react-native-svg](https://github.com/react-native-community/react-native-svg)
 
-Examples with [flubber](https://github.com/veltman/flubber), [d3-path](https://github.com/d3/d3-path), [d3-interpolate-path](https://github.com/d3/d3-interpolate-path), [d3-shape](https://github.com/d3/d3-shape), [d3-chord](https://github.com/d3/d3-chord), [d3-hierarchy](https://github.com/d3/d3-hierarchy), [svg-path-properties](https://github.com/rveciana/svg-path-properties)
+Examples with [d3-annotation](https://github.com/susielu/d3-annotation), [d3-chord](https://github.com/d3/d3-chord), [d3-contour](https://github.com/d3/d3-contour), [d3-interpolate-path](https://github.com/d3/d3-interpolate-path), [d3-path](https://github.com/d3/d3-path), [d3-hexbin](https://github.com/d3/d3-hexbin), [d3-hierarchy](https://github.com/d3/d3-hierarchy), [d3-sankey](https://github.com/d3/d3-sankey), [d3-shape](https://github.com/d3/d3-shape), [d3-voronoi](https://github.com/d3/d3-voronoi), [flubber](https://github.com/veltman/flubber), [svg-path-properties](https://github.com/rveciana/svg-path-properties)
 
 D3 Examples from Mike Bostock's [Blocks](https://bl.ocks.org/mbostock) converted to React Native
 
@@ -22,6 +22,12 @@ D3 Examples from Mike Bostock's [Blocks](https://bl.ocks.org/mbostock) converted
 [Anchor Walkthrough](https://gfycat.com/MadeupHandyHound)
 
 [Voronoi](https://gfycat.com/AlienatedVillainousKagu)
+
+[D3 Annotation](https://gfycat.com/EverlastingWindyAmericanbobtail)
+
+[Staggered D3 Line Animation](https://gfycat.com/FickleExcitableGermanshepherd)
+
+[Staggered Circle Animation with D3 GeoPath](https://gfycat.com/BruisedRemorsefulHarvestmouse)
 
 ## Expo
 
