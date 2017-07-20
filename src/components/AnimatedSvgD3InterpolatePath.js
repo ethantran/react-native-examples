@@ -1,14 +1,12 @@
-import React, { Component } from 'react';
-import { Svg } from 'expo';
-import * as d3 from 'd3-interpolate-path';
-import AnimatedSvgFix from './AnimatedSvgFix';
-
 /**
  * Problem: What is the best way to animate a path with animated.value?
  * Solution: This demonstrates how you can do it with d3 interpolate
  */
+import React, { Component } from 'react';
+import { Animated } from 'react-native';
+import * as d3 from 'd3-interpolate-path';
 
-const NativeSvgPath = Svg.Path;
+import Path from './AnimatedSvgPath';
 
 function createInterpolator(props) {
     return d3.interpolatePath(props.d1, props.d2);
@@ -17,17 +15,17 @@ function createInterpolator(props) {
 class SvgD3InterpolatePath extends Component {
     static defaultProps = {
         t: 0
-    }
+    };
     constructor(props) {
         super(props);
         this.interpolator = createInterpolator(props);
     }
-    setNativeProps = (props) => {
+    setNativeProps = props => {
         if (props.t) {
             props.d = this.interpolator(props.t);
         }
         this._component && this._component.setNativeProps(props);
-    }
+    };
     shouldComponentUpdate(nextProps) {
         if (nextProps.d1 !== this.props.d1 || nextProps.d2 !== this.props.d2) {
             this.interpolator = createInterpolator(nextProps);
@@ -39,7 +37,7 @@ class SvgD3InterpolatePath extends Component {
         const { t, ...props } = this.props;
         const d = this.interpolator(t);
         return (
-            <NativeSvgPath
+            <Path
                 ref={component => (this._component = component)}
                 {...props}
                 d={d}
@@ -47,5 +45,5 @@ class SvgD3InterpolatePath extends Component {
         );
     }
 }
-SvgD3InterpolatePath = AnimatedSvgFix(SvgD3InterpolatePath);
+SvgD3InterpolatePath = Animated.createAnimatedComponent(SvgD3InterpolatePath);
 export default SvgD3InterpolatePath;
