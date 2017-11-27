@@ -14,7 +14,7 @@ const defaultProps = {
     t: 0
 };
 
-export default class SvgInterpolatePointAtLength extends Component {
+class SvgInterpolatePointAtLength extends Component {
     props: Props;
     properties: typeof svgPathProperties;
     length: number;
@@ -59,3 +59,4 @@ SvgInterpolatePointAtLength.defaultProps = defaultProps;
 SvgInterpolatePointAtLength = Animated.createAnimatedComponent(
     SvgInterpolatePointAtLength
 );
+export default SvgInterpolatePointAtLength;
