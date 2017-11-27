@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { StyleSheet, Animated, Easing } from 'react-native';
-import { Components } from 'expo';
-const { LinearGradient: NativeLinearGradient } = Components;
+import Expo from 'expo';
+const { LinearGradient: NativeLinearGradient } = Expo;
 
 /**
  * Problem: LinearGradient requires an array for colors but animated values cannot
