@@ -7,6 +7,8 @@ Examples with [d3-annotation](https://github.com/susielu/d3-annotation), [d3-cho
 
 D3 Examples from Mike Bostock's [Blocks](https://bl.ocks.org/mbostock) converted to React Native
 
+SVG Metaball Animation from [Varun](http://varun.ca/metaballs/)
+
 ## Screenshots
 
 <img src="https://user-images.githubusercontent.com/3276358/27260564-16fb9d14-53f5-11e7-9743-23e857faa1a3.jpg" width="200px"><img src="https://user-images.githubusercontent.com/3276358/27260565-170b399a-53f5-11e7-9e10-cf777869ffbb.jpg" width="200px"><img src="https://user-images.githubusercontent.com/3276358/27514756-7cea7852-5959-11e7-9ae5-3fdd871a9c95.jpg" width="200px">
