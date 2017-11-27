@@ -10,7 +10,7 @@ import { d as TwitterIconSvgPath } from '../components/TwitterIconSvgPath';
 const fromShape = GithubIconSvgPath;
 const toShape = TwitterIconSvgPath;
 const interpolatorType = 'interpolate';
-const options = { maxSegmentLength: 1 };
+const options = { maxSegmentLength: 5 };
 
 export default class SvgFlubberAnimation extends Component {
     constructor(props) {

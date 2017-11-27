@@ -2802,9 +2802,9 @@ flow-bin@^0.49.1:
   version "0.49.1"
   resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.49.1.tgz#c9e456b3173a7535a4ffaf28956352c63bb8e3e9"
 
-flubber@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/flubber/-/flubber-0.3.0.tgz#aff4015395bdad4a7bafb53b617db94fbe243d77"
+flubber@^0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/flubber/-/flubber-0.4.0.tgz#4b5bbf4aaf9306c5ffbf91a60689299c0b8d3866"
   dependencies:
     d3-array "^1.2.0"
     d3-polygon "^1.0.3"
