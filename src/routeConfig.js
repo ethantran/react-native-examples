@@ -29,6 +29,7 @@ import SvgD3TreemapBasic from './screens/SvgD3TreemapBasic';
 import SvgD3VoronoiAnimation from './screens/SvgD3VoronoiAnimation';
 import SvgEllipseAnimation from './screens/SvgEllipseAnimation';
 import SvgFlubberAnimation from './screens/SvgFlubberAnimation';
+import SvgGAnimation from './screens/SvgGAnimation';
 import SvgGradientAnimation from './screens/SvgGradientAnimation';
 import SvgInterpolatePointAlongPathAnimation from './screens/SvgInterpolatePointAlongPathAnimation';
 import SvgPathDrawing from './screens/SvgPathDrawing';
@@ -75,6 +76,7 @@ export default {
     SvgD3VoronoiAnimation: { screen: SvgD3VoronoiAnimation },
     SvgEllipseAnimation: { screen: SvgEllipseAnimation },
     SvgFlubberAnimation: { screen: SvgFlubberAnimation },
+    SvgGAnimation: { screen: SvgGAnimation },
     SvgGradientAnimation: { screen: SvgGradientAnimation },
     SvgInterpolatePointAlongPathAnimation: { screen: SvgInterpolatePointAlongPathAnimation },
     SvgPathDrawing: { screen: SvgPathDrawing },
