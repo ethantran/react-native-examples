@@ -116,7 +116,7 @@ export default function SvgBrushFix(WrappedComponent) {
         };
         componentWillReceiveProps(nextProps) {
             this.updateCache(nextProps);
-            if (nextProps.children !== this.props.children) {
+            if (nextProps.strokeDasharray !== this.props.strokeDasharray) {
                 removeListeners(this.strokeDasharray);
                 this.strokeDasharray = listen(nextProps.strokeDasharray, _ =>
                     this.setNativeProps({ updateStrokeDasharray: true })
