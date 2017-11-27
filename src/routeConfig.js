@@ -33,6 +33,7 @@ import SvgGradientAnimation from './screens/SvgGradientAnimation';
 import SvgInterpolatePointAlongPathAnimation from './screens/SvgInterpolatePointAlongPathAnimation';
 import SvgPathDrawing from './screens/SvgPathDrawing';
 import SvgLineAnimation from './screens/SvgLineAnimation';
+import SvgMetaball from './screens/SvgMetaball';
 import SvgPolygonAnimation from './screens/SvgPolygonAnimation';
 import SvgPolylineAnimation from './screens/SvgPolylineAnimation';
 import SvgRectAnimation from './screens/SvgRectAnimation';
@@ -78,6 +79,7 @@ export default {
     SvgInterpolatePointAlongPathAnimation: { screen: SvgInterpolatePointAlongPathAnimation },
     SvgPathDrawing: { screen: SvgPathDrawing },
     SvgLineAnimation: { screen: SvgLineAnimation },
+    SvgMetaball: { screen: SvgMetaball },
     SvgPolygonAnimation: { screen: SvgPolygonAnimation },
     SvgPolylineAnimation: { screen: SvgPolylineAnimation },
     SvgRectAnimation: { screen: SvgRectAnimation },
