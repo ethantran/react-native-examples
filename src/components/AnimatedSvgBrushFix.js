@@ -11,17 +11,20 @@ import { listen, removeListeners } from '../animatedListener';
 import type { AnimatedListener } from '../animatedListener';
 
 // https://github.com/react-native-community/react-native-svg/blob/master/lib/extract/extractBrush.js
+const patternReg = /^url\(#(.+?)\)$/;
 function extractBrush(colorOrBrush) {
-    if (colorOrBrush === 'none' || colorOrBrush == null) {
+    if (colorOrBrush === 'none' || !colorOrBrush) {
         return null;
     }
     try {
-        let matched = colorOrBrush.match(/^url\(#(.+?)\)$/);
+        let matched = colorOrBrush.match(patternReg);
+        // brush
         if (matched) {
             return [1, matched[1]];
-        } else {
-            let c = new Color(colorOrBrush).rgbaArray();
-            return [0, c[0] / 255, c[1] / 255, c[2] / 255, c[3]];
+            //todo:
+        } else { // solid color
+            let [r, g, b, a = 1] = Color(colorOrBrush).rgb().array();
+            return [0, r / 255, g / 255, b / 255, a];
         }
     } catch (err) {
         console.warn(`"${colorOrBrush}" is not a valid color or brush`);
