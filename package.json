@@ -34,6 +34,7 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@turf/turf": "^5.0.4",
     "d3-array": "^1.2.1",
     "d3-axis": "^1.0.8",
     "d3-chord": "^1.0.4",
@@ -52,6 +53,7 @@
     "d3-svg-annotation": "^1.18.0",
     "d3-voronoi": "^1.1.2",
     "expo": "^23.0.0",
+    "expo-three": "^2.0.6",
     "flubber": "^0.4.0",
     "lorem-ipsum-react-native": "^1.0.3",
     "react": "16.0.0",
@@ -59,6 +61,7 @@
     "react-native": "https://github.com/expo/react-native/archive/sdk-23.0.0.tar.gz",
     "react-navigation": "^1.0.0-beta.19",
     "svg-path-properties": "^0.4.1",
+    "three": "^0.88.0",
     "topojson": "^3.0.2"
   }
 }
