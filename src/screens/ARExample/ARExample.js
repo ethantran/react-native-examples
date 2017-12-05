@@ -32,30 +32,37 @@ const LATITUDE_DELTA = 0.005;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 const POLY_API_KEY = 'AIzaSyDVowQMZQfFz7XsURJciLIQXZpgBDLfqIc';
+const GOOGLE_MAPS_GEOCODING_API_KEY = 'AIzaSyBzaFQvsdY9Cx5aB6tXMxrYm3jNchcvFhk';
 
-const destinations = [
+// temporary save until i setup redux persist
+const savedObjects = [
     // cvs
     {
+        type: 'place',
         latitude: 32.782149,
         longitude: -96.805218
     },
     // tiff treats
     {
+        type: 'place',
         latitude: 32.782521,
         longitude: -96.804757
     },
     // 7 11
     {
+        type: 'place',
         latitude: 32.782232,
         longitude: -96.803999
     },
     // wine and spirits
     {
+        type: 'place',
         latitude: 32.782422,
         longitude: -96.805492
     },
     // lot 041
     {
+        type: 'place',
         latitude: 32.783134,
         longitude: -96.804276
     }
@@ -92,6 +99,7 @@ const materials = [
     })
 ];
 
+// not sure why x and y are modified, copied from expo three demos
 const castPoint = ({ locationX: x, locationY: y }, { width, height }) => {
     let touch = new THREE.Vector2();
     // touch.set( x, y);
@@ -104,8 +112,11 @@ const recalibrateThreshold = 1;
 
 export default class ARExample extends React.Component {
     state = {
-        customDests: []
+        objects: []
     };
+    /**
+     * Subscriptions for location and heading tracking
+     */
     subs = [];
     panResponder = PanResponder.create({
         onStartShouldSetPanResponder: () => true,
@@ -115,9 +126,11 @@ export default class ARExample extends React.Component {
                 height: this.height
             });
             this.raycaster.setFromCamera(touch, this.camera);
-            // Find all intersected objects
-            let intersects = this.raycaster.intersectObjects(this.objects);
-            // if touched an object
+
+            // Find all intersected meshes
+            let intersects = this.raycaster.intersectObjects(this.meshes);
+
+            // handle intersections
             if (intersects.length > 0) {
                 this.handleSelection(intersects[0]);
             } else {
@@ -130,9 +143,10 @@ export default class ARExample extends React.Component {
                 height: this.height
             });
             this.raycaster.setFromCamera(touch, this.camera);
+
             // if selected an object
             if (this.selection) {
-                // this.selection.position.x += gestureState.dx;
+                // this.selection.mesh.position.x += gestureState.dx;
             }
         },
         onPanResponderRelease: () => {
@@ -151,7 +165,10 @@ export default class ARExample extends React.Component {
 
     componentWillUnmount() {
         console.disableYellowBox = false;
+
+        // stop listening for location and heading
         this.subs.forEach(sub => sub.remove());
+
         // _onGLContextCreate does not stop running on unmount
         this.stopAnimate = true;
     }
@@ -184,6 +201,15 @@ export default class ARExample extends React.Component {
         });
     };
 
+    /**
+     * increment recalibrateCount after updating location
+     * because we want to make sure all meshes are in an an accurate
+     * spot no matter where you move by recalibrating the mesh position
+     * after so many updates
+     * TODO: recalibrate based on a radius from last calibration
+     * if location distance from calibration location
+     * is greater than threshold, recalibrate
+     */
     watchPositionAsync = async () => {
         this.subs.push(
             await Location.watchPositionAsync(
@@ -224,6 +250,8 @@ export default class ARExample extends React.Component {
         );
     };
 
+    // map
+
     onRegionChange = region => {
         this.setState({ region });
     };
@@ -231,6 +259,8 @@ export default class ARExample extends React.Component {
     onRegionChangeComplete = region => {
         this.setState({ region });
     };
+
+    // turf
 
     getDistance = (coord1, coord2) => {
         const from = turf.point([coord1.longitude, coord1.latitude]);
@@ -273,6 +303,10 @@ export default class ARExample extends React.Component {
         };
     };
 
+    // HUD
+
+    // progress
+
     handleRemoteDownload = downloadProgress => {
         this.setState({
             showDownloadProgress: true,
@@ -292,6 +326,9 @@ export default class ARExample extends React.Component {
         }
     };
 
+    /**
+     *
+     */
     selectPolyAsset = async asset => {
         this.setState({ polySearch: false });
         const objFormat = asset.formats.find(
@@ -385,9 +422,14 @@ export default class ARExample extends React.Component {
                 objloader.load(
                     urlOBJ,
                     mesh => {
-                        this.addCustomDestination({ mesh });
+                        const object = {
+                            type: 'poly',
+                            mesh,
+                            asset
+                        };
+                        this.addObject(object);
                         this.setState({
-                            polySelection: { mesh },
+                            selection: object,
                             showDownloadProgress: false
                         });
                     },
@@ -447,10 +489,13 @@ export default class ARExample extends React.Component {
                             <MapView.Marker
                                 coordinate={this.state.location.coords}
                             />
-                            {this.state.customDests.map((dest, i) => (
+                            {this.state.objects.map((obj, i) => (
                                 <MapView.Marker
                                     key={'custom' + i}
-                                    coordinate={dest}
+                                    coordinate={{
+                                        latitude: obj.latitude,
+                                        longitude: obj.longitude
+                                    }}
                                 />
                             ))}
                         </MapView>
@@ -470,66 +515,129 @@ export default class ARExample extends React.Component {
         );
     }
 
-    addDestinations = () => {
+    addSavedObjectsToScene = () => {
+        // not sure why i should do this, copied from somewhere
+        this.camera.position.setFromMatrixPosition(this.camera.matrixWorld);
+
+        // get camera position
         const cameraPos = new THREE.Vector3(0, 0, 0);
         cameraPos.applyMatrix4(this.camera.matrixWorld);
-        this.destinations = [];
-        destinations.forEach((dest, i) => {
-            const geometry = geometries[0];
-            const mesh = new THREE.Mesh(geometry, materials[i]);
-            const { distanceInKilometers } = this.getDistance(
-                this.state.location.coords,
-                dest
-            );
-            const { bearingInDegrees } = this.getBearing(
-                this.state.location.coords,
-                dest
-            );
-            const correctedBearingInDegrees =
-                bearingInDegrees - this.state.initialHeading.trueHeading;
-            const correctedBearingInRadians = turf.helpers.degreesToRadians(
-                correctedBearingInDegrees
-            );
-            const distanceInMeters = distanceInKilometers * 1000;
-            mesh.position.z =
-                cameraPos.z +
-                -1 * Math.cos(correctedBearingInRadians) * distanceInMeters;
-            mesh.position.x =
-                cameraPos.x +
-                Math.sin(correctedBearingInRadians) * distanceInMeters;
-            this.scene.add(mesh);
-            this.objects.push(mesh);
-            this.destinations.push(mesh);
+
+        // take the current object state (should be empty anyway) and add saved objects
+        const newObjects = [...this.state.objects];
+        // TODO: replace savedObjects with real redux persist
+        savedObjects.forEach((object, i) => {
+            const newObject = { ...object };
+            // default object type place handler
+            if (object.type === 'place') {
+                const geometry = geometries[0];
+                const material = materials[i];
+                const mesh = new THREE.Mesh(geometry, material);
+                newObject.mesh = mesh;
+            } else if (object.type === 'poly') {
+            }
+            this.scene.add(newObject.mesh);
+            this.calibrateObject(newObject, cameraPos);
+            newObjects.push(newObject);
         });
+        this.setState({ objects: newObjects });
     };
 
+    calibrateObject = (object, cameraPos) => {
+        // get distance from current geolocation to the object geolocation
+        const { distanceInKilometers } = this.getDistance(
+            this.state.location.coords,
+            object
+        );
+
+        // convert into meters since arkit is in meters i think
+        const distanceInMeters = distanceInKilometers * 1000;
+
+        // bearing is used to find a new point at a distance and an angle from starting coordinates
+        const { bearingInDegrees } = this.getBearing(
+            this.state.location.coords,
+            object
+        );
+
+        // adjust bearing based on the heading that arkit three.js space likely initialized at
+        const correctedBearingInDegrees =
+            bearingInDegrees - this.state.initialHeading.trueHeading;
+
+        // converting bearing to radians is required for Math.cos and Math.sin
+        const correctedBearingInRadians = turf.helpers.degreesToRadians(
+            correctedBearingInDegrees
+        );
+
+        // take the current camera pos and add the distance from current geolocation to object geolocation
+        // camera position is the best guess of where we are, current geolocation to three.js position
+        // camera position can be not in synce with current geolocation if geo is not updating when we move
+        // TODO: perhaps finding a geolocation from the initial geolocation and the camera position's distance from origin is better
+        object.mesh.position.z =
+            cameraPos.z +
+            -1 * Math.cos(correctedBearingInRadians) * distanceInMeters;
+        object.mesh.position.x =
+            cameraPos.x +
+            Math.sin(correctedBearingInRadians) * distanceInMeters;
+    };
+
+    /**
+     * Provide different interactions based on object type
+     */
     handleSelection = selection => {
+        // need to store selection because it can be used for pan responder move, animate, or render
         this.selection = selection;
-    };
-
-    handleCreateGeometry = () => {
-        let mesh;
-        // if selected a poly model, clone it
-        if (this.state.polySelection) {
-            mesh = this.state.polySelection.mesh.clone();
-        } else {
-            mesh = new THREE.Mesh(geometries[0], materials[0]);
+        this.setState({ selection });
+        if (selection.type === 'place') {
+        } else if (selection.type === 'poly') {
         }
-        this.addCustomDestination({ mesh });
     };
 
-    addCustomDestination = ({ mesh }) => {
+    /**
+     * if selected something
+     * if selection is a poly asset, clone it
+     * else create default geometry
+     */
+    handleCreateGeometry = () => {
+        const selection = this.state.selection;
+        let object = {};
+        if (selection) {
+            object.type = selection.type;
+            if (selection.type === 'poly') {
+                object.mesh = selection.mesh.clone();
+            }
+        } else {
+            object.mesh = new THREE.Mesh(geometries[0], materials[0]);
+        }
+        this.addObject(object);
+    };
+
+    addObject = object => {
+        // not sure why i should do this, copied from somewhere
+        this.camera.position.setFromMatrixPosition(this.camera.matrixWorld);
+
+        // get camera position
         const cameraPos = new THREE.Vector3(0, 0, 0);
         cameraPos.applyMatrix4(this.camera.matrixWorld);
+
+        // heading is used like bearing
+        // find difference between current and initial heading because arkit three js space heading does not know where is true north
         const headingInRadians = turf.helpers.degreesToRadians(
             this.state.heading.trueHeading -
                 this.state.initialHeading.trueHeading
         );
-        mesh.position.z =
+
+        // take the current camera pos and add the distance from current geolocation to object geolocation
+        // camera position is the best guess of where we are, current geolocation to three.js position
+        // camera position can be not in synce with current geolocation if geo is not updating when we move
+        // TODO: perhaps finding a geolocation from the initial geolocation and the camera position's distance from origin is better
+        object.mesh.position.z =
             cameraPos.z +
             -1 * Math.cos(headingInRadians) * defaultCreateDistance;
-        mesh.position.x =
+        object.mesh.position.x =
             cameraPos.x + Math.sin(headingInRadians) * defaultCreateDistance;
+
+        // calculate geolocation by adding distance to current geolocation
+        // need this to save and load the custom poly object in the same spot in the future
         const longitude =
             this.state.location.coords.longitude +
             -1 *
@@ -539,90 +647,47 @@ export default class ARExample extends React.Component {
             this.state.location.coords.latitude +
             Math.sin(headingInRadians) *
                 turf.helpers.lengthToDegrees(defaultCreateDistance, 'meters');
+
+        // update scene
+        this.scene.add(object.mesh);
+
+        // update object with geolocation and update state
+        const newObject = { ...object, longitude, latitude };
+        this.objects.push(newObject);
         this.setState({
-            customDests: [...this.state.customDests, { latitude, longitude }]
-        });
-        // scaleLongestSideToSize(mesh, 1);
-        // alignMesh(mesh, { y: 1 });
-        this.scene.add(mesh);
-        this.objects.push(mesh);
-        this.customObjects.push({
-            mesh,
-            coords: {
-                latitude,
-                longitude
-            }
+            objects: this.objects
         });
     };
 
+    // adjust mesh positions to new geolocation
     recalibrate = () => {
-        console.log('recalibrate');
-        this.recalibrateDestinations();
-        this.recalibrateCustomObjects();
+        console.log('calibrate');
+        // not sure why i should do this, copied from somewhere
+        this.camera.position.setFromMatrixPosition(this.camera.matrixWorld);
+
+        // get camera position, calculated here to possibly increase perf
+        const cameraPos = new THREE.Vector3(0, 0, 0);
+        cameraPos.applyMatrix4(this.camera.matrixWorld);
+
+        // calibration is possibly different for type
+        this.objects.forEach(object => {
+            this.calibrateObject(object, cameraPos);
+            // if (object.type === 'poly') {
+            //     this.recalibrateObject(object);
+            // } else if (object.type === 'place') {
+            //     this.recalibrateObject(object);
+            // }
+        });
+
+        // reset recalibrate counter
         this.recalibrateCount = 0;
     };
 
-    recalibrateDestinations = () => {
-        const cameraPos = new THREE.Vector3(0, 0, 0);
-        cameraPos.applyMatrix4(this.camera.matrixWorld);
-        this.destinations.forEach((mesh, i) => {
-            const { distanceInKilometers } = this.getDistance(
-                this.state.location.coords,
-                destinations[i]
-            );
-            const { bearingInDegrees } = this.getBearing(
-                this.state.location.coords,
-                destinations[i]
-            );
-            const correctedBearingInDegrees =
-                bearingInDegrees - this.state.initialHeading.trueHeading;
-            const correctedBearingInRadians = turf.helpers.degreesToRadians(
-                correctedBearingInDegrees
-            );
-            const distanceInMeters = distanceInKilometers * 1000;
-            mesh.position.z =
-                cameraPos.z +
-                -1 * Math.cos(correctedBearingInRadians) * distanceInMeters;
-            mesh.position.x =
-                cameraPos.x +
-                Math.sin(correctedBearingInRadians) * distanceInMeters;
-        });
-    };
-
-    recalibrateCustomObjects = () => {
-        const cameraPos = new THREE.Vector3(0, 0, 0);
-        cameraPos.applyMatrix4(this.camera.matrixWorld);
-        this.customObjects.forEach(({ mesh, coords }, i) => {
-            const { distanceInKilometers } = this.getDistance(
-                this.state.location.coords,
-                coords
-            );
-            const { bearingInDegrees } = this.getBearing(
-                this.state.location.coords,
-                coords
-            );
-            const correctedBearingInDegrees =
-                bearingInDegrees - this.state.initialHeading.trueHeading;
-            const correctedBearingInRadians = turf.helpers.degreesToRadians(
-                correctedBearingInDegrees
-            );
-            const distanceInMeters = distanceInKilometers * 1000;
-            mesh.position.z =
-                cameraPos.z +
-                -1 * Math.cos(correctedBearingInRadians) * distanceInMeters;
-            mesh.position.x =
-                cameraPos.x +
-                Math.sin(correctedBearingInRadians) * distanceInMeters;
-        });
-    };
-
     _onGLContextCreate = async gl => {
+        // boilerplace arkit setup
         this.width = gl.drawingBufferWidth;
         this.height = gl.drawingBufferHeight;
-        this.raycaster = new THREE.Raycaster();
-
         this.arSession = await this._glView.startARSessionAsync();
-
         this.scene = new THREE.Scene();
         this.camera = ExpoTHREE.createARCamera(
             this.arSession,
@@ -633,12 +698,12 @@ export default class ARExample extends React.Component {
         );
         this.renderer = ExpoTHREE.createRenderer({ gl });
         this.renderer.setSize(this.width, this.height);
-
         this.scene.background = ExpoTHREE.createARBackgroundTexture(
             this.arSession,
             this.renderer
         );
 
+        // add lights for fun
         const ambient = new THREE.HemisphereLight(0x66aaff, 0x886666, 0.5);
         ambient.position.set(-0.5, 0.75, -1);
         this.scene.add(ambient);
@@ -646,22 +711,37 @@ export default class ARExample extends React.Component {
         light.position.set(1, 0.75, 0.5);
         this.scene.add(light);
 
+        // good for debugging and seeing the three js space
         this.scene.add(new THREE.GridHelper(10, 10));
 
-        this.objects = [];
-        this.customObjects = [];
+        // not sure if i need to do this, copied from somewhere
         this.camera.position.setFromMatrixPosition(this.camera.matrixWorld);
+
+        // start geolocation and heading tracking here so the initial location and initial heading is as accurate as possible
         await this.init();
-        this.addDestinations();
+
+        // used for touch events to see if we touched an object
+        this.raycaster = new THREE.Raycaster();
+
+        // need to track meshes for raycaster
+        this.meshes = [];
+
+        // need to track objects in the scene for caching, recalibrating,
+        this.objects = [];
+
+        this.addSavedObjectsToScene();
+
         const animate = () => {
             // _onGLContextCreate animate does not stop running on unmount
             if (this.stopAnimate) {
                 return;
             }
-            this.camera.position.setFromMatrixPosition(this.camera.matrixWorld);
+
+            // recalibrate only if geolocation updates a certain number of times
             if (this.recalibrateCount >= recalibrateThreshold) {
                 this.recalibrate();
             }
+
             requestAnimationFrame(animate);
             this.renderer.render(this.scene, this.camera);
             gl.endFrameEXP();

@@ -1,13 +1,18 @@
 import React from 'react';
-import { TouchableOpacity, Image, Text } from 'react-native';
+import { TouchableOpacity, Image, Dimensions } from 'react-native';
+
+const { width } = Dimensions.get('window');
+
+const ROW_COUNT = 3;
+const SIZE = width / ROW_COUNT - 8 * 2;
 
 export default ({ asset, onPress }) => (
     <TouchableOpacity
         key={asset.name}
         style={{
             flexDirection: 'row',
-            padding: 8,
-            marginBottom: 8
+            marginBottom: 8,
+            marginRight: 8
         }}
         onPress={() => onPress(asset)}
     >
@@ -16,12 +21,10 @@ export default ({ asset, onPress }) => (
                 uri: asset.thumbnail.url
             }}
             style={{
-                width: 48,
-                height: 48,
-                borderRadius: 8,
-                marginRight: 8
+                width: SIZE,
+                height: SIZE,
+                borderRadius: 8
             }}
         />
-        <Text style={{ fontSize: 24 }}>{asset.displayName}</Text>
     </TouchableOpacity>
 );

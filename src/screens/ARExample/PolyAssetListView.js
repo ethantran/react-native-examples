@@ -6,7 +6,11 @@ export default ({ results, onPress }) => (
         style={{ flex: 1, borderRadius: 8 }}
         contentContainerStyle={{
             backgroundColor: '#fff',
-            borderRadius: 8
+            borderRadius: 8,
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            paddingTop: 8,
+            paddingLeft: 8
         }}
     >
         {results.assets.map((asset, i) => (
