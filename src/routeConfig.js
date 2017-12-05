@@ -1,5 +1,5 @@
 import AnchorWalkthrough from './screens/AnchorWalkthrough';
-import ARExample from './screens/ARExample';
+import ARExample from './screens/ARExample/ARExample';
 import FlipboardCover from './screens/FlipboardCover';
 import LolaTravelChat from './screens/LolaTravelChat';
 import OperatorChat from './screens/OperatorChat';

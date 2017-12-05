@@ -14,8 +14,16 @@ import * as THREE from 'three';
 import ExpoTHREE from 'expo-three';
 import { GLView, Location, Permissions, MapView, FileSystem } from 'expo';
 import * as turf from '@turf/turf';
-import qs from 'qs';
 import { MaterialIcons } from '@expo/vector-icons';
+
+require('three/examples/js/loaders/OBJLoader');
+require('../../loaders/MTLLoader');
+
+import HUD from './HUD';
+import PolySearchView from './PolySearchView';
+import Progress from './Progress';
+
+const { scaleLongestSideToSize, alignMesh } = ExpoTHREE.utils;
 
 const screen = Dimensions.get('window');
 
@@ -91,19 +99,8 @@ const castPoint = ({ locationX: x, locationY: y }, { width, height }) => {
     return touch;
 };
 
-const defaultZ = 3;
-const defaultX = 3;
-
-const Poly = {
-    getAsset: async (name, params) =>
-        (await fetch(
-            `https://poly.googleapis.com/v1/${name}/?${qs.stringify(params)}`
-        )).json(),
-    listAssets: async params =>
-        (await fetch(
-            `https://poly.googleapis.com/v1/assets/?${qs.stringify(params)}`
-        )).json()
-};
+const defaultCreateDistance = 3;
+const recalibrateThreshold = 1;
 
 export default class ARExample extends React.Component {
     state = {
@@ -149,12 +146,27 @@ export default class ARExample extends React.Component {
 
     componentDidMount() {
         console.disableYellowBox = true;
+        this.init();
     }
 
     componentWillUnmount() {
         console.disableYellowBox = false;
         this.subs.forEach(sub => sub.remove());
+        // _onGLContextCreate does not stop running on unmount
+        this.stopAnimate = true;
     }
+
+    init = async () => {
+        await Permissions.askAsync(Permissions.LOCATION);
+        await Promise.all([
+            this.getCurrentPositionAsync(),
+            this.getHeadingAsync()
+        ]);
+        await Promise.all([
+            this.watchPositionAsync(),
+            this.watchHeadingAsync()
+        ]);
+    };
 
     getCurrentPositionAsync = async () => {
         let location = await Location.getCurrentPositionAsync({
@@ -179,22 +191,28 @@ export default class ARExample extends React.Component {
                     enableHighAccuracy: true
                 },
                 location => {
-                    this.setState({
-                        location,
-                        region: {
-                            latitude: location.coords.latitude,
-                            longitude: location.coords.longitude,
-                            latitudeDelta: LATITUDE_DELTA,
-                            longitudeDelta: LONGITUDE_DELTA
+                    this.setState(
+                        {
+                            location,
+                            region: {
+                                latitude: location.coords.latitude,
+                                longitude: location.coords.longitude,
+                                latitudeDelta: LATITUDE_DELTA,
+                                longitudeDelta: LONGITUDE_DELTA
+                            }
+                        },
+                        () => {
+                            this.recalibrateCount =
+                                (this.recalibrateCount || 0) + 1;
                         }
-                    });
+                    );
                 }
             )
         );
     };
 
     getHeadingAsync = async () => {
-        let heading = await Location.getHeadingAsync();
+        const heading = await Location.getHeadingAsync();
         this.setState({ initialHeading: heading, heading });
     };
 
@@ -254,9 +272,139 @@ export default class ARExample extends React.Component {
             rhumbBearingInRadians
         };
     };
-    // {destinations.map((dest, i) => (
-    //     <MapView.Marker key="" coordinate={dest} />
-    // ))}
+
+    handleRemoteDownload = downloadProgress => {
+        this.setState({
+            showDownloadProgress: true,
+            downloadProgress:
+                downloadProgress.totalBytesWritten /
+                downloadProgress.totalBytesExpectedToWrite *
+                100
+        });
+    };
+
+    handleLocalDownload = xhr => {
+        if (xhr.lengthComputable) {
+            this.setState({
+                showDownloadProgress: true,
+                downloadProgress: xhr.loaded / xhr.total * 100
+            });
+        }
+    };
+
+    selectPolyAsset = async asset => {
+        this.setState({ polySearch: false });
+        const objFormat = asset.formats.find(
+            format => format.formatType === 'OBJ'
+        );
+        if (!objFormat) {
+            console.error('Asset does not have obj format');
+            return;
+        }
+        // const downloadResumable = FileSystem.createDownloadResumable(
+        //     objFormat.root.url,
+        //     FileSystem.documentDirectory + objFormat.root.relativePath,
+        //     {},
+        //     this.handleRemoteDownload
+        // );
+        // console.log('remote downloading root');
+        // const rootDownload = await downloadResumable.downloadAsync();
+        // console.log(rootDownload);
+        // console.log('remote downloading resources');
+        // const resourceDownloads = await Promise.all(
+        //     objFormat.resources.map(
+        //         async resource =>
+        //             await FileSystem.createDownloadResumable(
+        //                 resource.url,
+        //                 FileSystem.documentDirectory + resource.relativePath,
+        //                 {},
+        //                 this.handleRemoteDownload
+        //             ).downloadAsync()
+        //     )
+        // );
+        // console.log(resourceDownloads);
+        // console.log('remote downloading complete');
+        // console.log('local downloading root');
+        // console.log('load uris', [
+        //     rootDownload.uri,
+        //     ...resourceDownloads.map(download => download.uri)
+        // ]);
+        // const mesh = await ExpoTHREE.loadAsync(
+        //     [
+        //         rootDownload.uri,
+        //         ...resourceDownloads.map(download => download.uri)
+        //     ],
+        //     this.handleLocalDownload
+        // );
+        // console.log('local downloading complete');
+        // console.log('apply materials');
+        // mesh.traverse(async child => {
+        //     if (child instanceof THREE.Mesh) {
+        //         /// Smooth geometry
+        //         const tempGeo = new THREE.Geometry().fromBufferGeometry(
+        //             child.geometry
+        //         );
+        //         tempGeo.mergeVertices();
+        //         // after only mergeVertices my textrues were turning black so this fixed normals issues
+        //         tempGeo.computeVertexNormals();
+        //         tempGeo.computeFaceNormals();
+        //         child.geometry = new THREE.BufferGeometry().fromGeometry(
+        //             tempGeo
+        //         );
+        //         child.material.shading = THREE.SmoothShading;
+        //         child.material.side = THREE.FrontSide;
+        //     }
+        // });
+        // this.addCustomDestination({ mesh });
+        // this.setState({
+        //     polySelection: { mesh },
+        //     showDownloadProgress: false
+        // });
+
+        // const mesh = await ExpoTHREE.loadAsync(
+        //     [
+        //         objFormat.root.url,
+        //         ...objFormat.resources.map(resource => resource.url)
+        //     ],
+        //     this.handleLocalDownload
+        // );
+        // this.addCustomDestination({ mesh });
+        // this.setState({
+        //     polySelection: { mesh },
+        //     showDownloadProgress: false
+        // });
+
+        var urlOBJ = objFormat.root.url;
+        var urlMTL = objFormat.resources[0].url;
+        var mtlloader = new THREE.MTLLoader();
+        mtlloader.load(
+            urlMTL,
+            mats => {
+                var objloader = new THREE.OBJLoader();
+                objloader.setMaterials(mats);
+                objloader.load(
+                    urlOBJ,
+                    mesh => {
+                        this.addCustomDestination({ mesh });
+                        this.setState({
+                            polySelection: { mesh },
+                            showDownloadProgress: false
+                        });
+                    },
+                    this.handleLocalDownload
+                );
+            },
+            this.handleLocalDownload
+        );
+    };
+
+    handleHUD = type => {
+        if (type === 'search') {
+            this.openPolySearch();
+        } else if (type === 'map') {
+            this.toggleMap();
+        }
+    };
 
     openPolySearch = () => {
         this.setState({ polySearch: true });
@@ -266,77 +414,8 @@ export default class ARExample extends React.Component {
         this.setState({ polySearch: false });
     };
 
-    handlePolySearchChangeText = polySearchText => {
-        this.setState({ polySearchText });
-    };
-
-    submitPolySearch = async () => {
-        const polySearchResults = await Poly.listAssets({
-            key: POLY_API_KEY,
-            keywords: this.state.polySearchText
-        });
-        this.setState({ polySearchResults });
-    };
-
-    handleRemoteDownload = downloadProgress => {
-        this.setState({
-            showDownloadProgess: true,
-            downloadProgress:
-                downloadProgress.totalBytesWritten /
-                downloadProgress.totalBytesExpectedToWrite * 100
-        });
-    };
-
-    handleLocalDownload = xhr => {
-        if (xhr.lengthComputable) {
-            this.setState({
-                showDownloadProgess: true,
-                downloadProgress: xhr.loaded / xhr.total * 100
-            });
-        }
-    };
-
-    selectPolyAsset = async asset => {
-        this.setState({ polySearch: false });
-        console.log('asset', asset);
-        const objFormat = asset.formats.find(
-            format => format.formatType === 'OBJ'
-        );
-        console.log('objFormat', objFormat);
-        if (!objFormat) {
-            console.error('Asset does not have obj format');
-            return;
-        }
-        const downloadResumable = FileSystem.createDownloadResumable(
-            objFormat.root.url,
-            FileSystem.documentDirectory + objFormat.root.relativePath,
-            {},
-            this.handleRemoteDownload
-        );
-        console.log('remote downloading root');
-        const rootDownload = await downloadResumable.downloadAsync();
-        console.log(rootDownload);
-        console.log('remote downloading resources');
-        const resourceDownloads = objFormat.resources.map(
-            async resource =>
-                await FileSystem.createDownloadResumable(
-                    resource.url,
-                    FileSystem.documentDirectory + resource.relativePath,
-                    {},
-                    this.handleRemoteDownload
-                ).downloadAsync()
-        );
-        console.log(resourceDownloads);
-        console.log('remote downloading complete');
-        console.log('local downloading root');
-        // await ExpoTHREE.loadAsync(
-        //     rootDownload.uri,
-        //     this.handleLocalDownload,
-        //     name => res[name]
-        // );
-        this.setState({
-            showDownloadProgess: false
-        });
+    toggleMap = () => {
+        this.setState({ showMap: !this.state.showMap });
     };
 
     render() {
@@ -348,140 +427,44 @@ export default class ARExample extends React.Component {
                     style={{ flex: 1 }}
                     onContextCreate={this._onGLContextCreate}
                 />
-                {this.state.location && (
-                    <MapView
-                        style={{
-                            position: 'absolute',
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            height: '50%'
-                        }}
-                        initialRegion={this.state.region}
-                        region={this.state.region}
-                        onRegionChange={this.onRegionChange}
-                        showsUserLocation
-                        showsCompass
-                    >
-                        <MapView.Marker
-                            coordinate={this.state.location.coords}
-                        />
-                        {this.state.customDests.map((dest, i) => (
-                            <MapView.Marker
-                                key={'custom' + i}
-                                coordinate={dest}
-                            />
-                        ))}
-                    </MapView>
-                )}
-                {!this.state.polySearch && (
-                    <TouchableOpacity
-                        onPress={this.openPolySearch}
-                        style={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 24,
-                            backgroundColor: '#fff',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            position: 'absolute',
-                            top: 8,
-                            right: 8
-                        }}
-                    >
-                        <MaterialIcons size={24} color="#000" name="search" />
-                    </TouchableOpacity>
-                )}
-                {this.state.polySearch && (
-                    <View style={[StyleSheet.absoluteFill, { padding: 8 }]}>
-                        <View style={{ flexDirection: 'row', marginBottom: 8 }}>
-                            <TextInput
-                                style={{
-                                    flex: 1,
-                                    height: 48,
-                                    borderRadius: 8,
-                                    backgroundColor: '#fff',
-                                    marginRight: 8,
-                                    padding: 8
-                                }}
-                                value={this.state.polySearchText}
-                                onChangeText={this.handlePolySearchChangeText}
-                                onSubmitEditing={this.submitPolySearch}
-                            />
-                            <TouchableOpacity
-                                onPress={this.closePolySearch}
-                                style={{
-                                    width: 48,
-                                    height: 48,
-                                    borderRadius: 24,
-                                    backgroundColor: '#fff',
-                                    justifyContent: 'center',
-                                    alignItems: 'center'
-                                }}
-                            >
-                                <MaterialIcons
-                                    size={24}
-                                    color="#000"
-                                    name="close"
-                                />
-                            </TouchableOpacity>
-                        </View>
-                        <ScrollView
-                            style={{ flex: 1, borderRadius: 8 }}
-                            contentContainerStyle={{
-                                backgroundColor: '#fff',
-                                borderRadius: 8
+                {this.state.location &&
+                    this.state.showMap && (
+                        <MapView
+                            style={{
+                                position: 'absolute',
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                height: '50%'
                             }}
+                            initialRegion={this.state.region}
+                            region={this.state.region}
+                            onRegionChange={this.onRegionChange}
+                            showsUserLocation
+                            followsUserLocation
+                            showsCompass
                         >
-                            {this.state.polySearchResults &&
-                                this.state.polySearchResults.assets.map(
-                                    (asset, i) => (
-                                        <TouchableOpacity
-                                            key={asset.name}
-                                            style={{
-                                                flexDirection: 'row',
-                                                padding: 8,
-                                                marginBottom: 8
-                                            }}
-                                            onPress={() =>
-                                                this.selectPolyAsset(asset)
-                                            }
-                                        >
-                                            <Image
-                                                source={{
-                                                    uri: asset.thumbnail.url
-                                                }}
-                                                style={{
-                                                    width: 48,
-                                                    height: 48,
-                                                    borderRadius: 8,
-                                                    marginRight: 8
-                                                }}
-                                            />
-                                            <Text style={{ fontSize: 24 }}>
-                                                {asset.displayName}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    )
-                                )}
-                        </ScrollView>
-                    </View>
+                            <MapView.Marker
+                                coordinate={this.state.location.coords}
+                            />
+                            {this.state.customDests.map((dest, i) => (
+                                <MapView.Marker
+                                    key={'custom' + i}
+                                    coordinate={dest}
+                                />
+                            ))}
+                        </MapView>
+                    )}
+                <HUD onPress={this.handleHUD} />
+                {this.state.polySearch && (
+                    <PolySearchView
+                        apiKey={POLY_API_KEY}
+                        selectAsset={this.selectPolyAsset}
+                        close={this.closePolySearch}
+                    />
                 )}
-                {this.showDownloadProgess && (
-                    <View
-                        style={[
-                            StyleSheet.absoluteFill,
-                            {
-                                backgroundColor: '#fff',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }
-                        ]}
-                    >
-                        <Text style={{ fontSize: 24 }}>
-                            {this.state.downloadProgress}
-                        </Text>
-                    </View>
+                {this.state.showDownloadProgress && (
+                    <Progress progress={this.state.downloadProgress} />
                 )}
             </View>
         );
@@ -495,11 +478,11 @@ export default class ARExample extends React.Component {
             const geometry = geometries[0];
             const mesh = new THREE.Mesh(geometry, materials[i]);
             const { distanceInKilometers } = this.getDistance(
-                this.state.initialLocation.coords,
+                this.state.location.coords,
                 dest
             );
             const { bearingInDegrees } = this.getBearing(
-                this.state.initialLocation.coords,
+                this.state.location.coords,
                 dest
             );
             const correctedBearingInDegrees =
@@ -518,6 +501,65 @@ export default class ARExample extends React.Component {
             this.objects.push(mesh);
             this.destinations.push(mesh);
         });
+    };
+
+    handleSelection = selection => {
+        this.selection = selection;
+    };
+
+    handleCreateGeometry = () => {
+        let mesh;
+        // if selected a poly model, clone it
+        if (this.state.polySelection) {
+            mesh = this.state.polySelection.mesh.clone();
+        } else {
+            mesh = new THREE.Mesh(geometries[0], materials[0]);
+        }
+        this.addCustomDestination({ mesh });
+    };
+
+    addCustomDestination = ({ mesh }) => {
+        const cameraPos = new THREE.Vector3(0, 0, 0);
+        cameraPos.applyMatrix4(this.camera.matrixWorld);
+        const headingInRadians = turf.helpers.degreesToRadians(
+            this.state.heading.trueHeading -
+                this.state.initialHeading.trueHeading
+        );
+        mesh.position.z =
+            cameraPos.z +
+            -1 * Math.cos(headingInRadians) * defaultCreateDistance;
+        mesh.position.x =
+            cameraPos.x + Math.sin(headingInRadians) * defaultCreateDistance;
+        const longitude =
+            this.state.location.coords.longitude +
+            -1 *
+                Math.cos(headingInRadians) *
+                turf.helpers.lengthToDegrees(defaultCreateDistance, 'meters');
+        const latitude =
+            this.state.location.coords.latitude +
+            Math.sin(headingInRadians) *
+                turf.helpers.lengthToDegrees(defaultCreateDistance, 'meters');
+        this.setState({
+            customDests: [...this.state.customDests, { latitude, longitude }]
+        });
+        // scaleLongestSideToSize(mesh, 1);
+        // alignMesh(mesh, { y: 1 });
+        this.scene.add(mesh);
+        this.objects.push(mesh);
+        this.customObjects.push({
+            mesh,
+            coords: {
+                latitude,
+                longitude
+            }
+        });
+    };
+
+    recalibrate = () => {
+        console.log('recalibrate');
+        this.recalibrateDestinations();
+        this.recalibrateCustomObjects();
+        this.recalibrateCount = 0;
     };
 
     recalibrateDestinations = () => {
@@ -547,45 +589,32 @@ export default class ARExample extends React.Component {
         });
     };
 
-    handleSelection = selection => {
-        this.selection = selection;
-    };
-
-    handleCreateGeometry = () => {
+    recalibrateCustomObjects = () => {
         const cameraPos = new THREE.Vector3(0, 0, 0);
         cameraPos.applyMatrix4(this.camera.matrixWorld);
-
-        let mesh = new THREE.Mesh(geometries[0], materials[0]);
-        const headingInRadians = turf.helpers.degreesToRadians(
-            this.state.heading.trueHeading -
-                this.state.initialHeading.trueHeading
-        );
-        mesh.position.z =
-            cameraPos.z + -1 * Math.cos(headingInRadians) * defaultZ;
-        mesh.position.x = cameraPos.x + Math.sin(headingInRadians) * defaultX;
-        const longitude =
-            this.state.location.coords.longitude +
-            -1 *
-                Math.cos(headingInRadians) *
-                turf.helpers.lengthToDegrees(defaultZ, 'meters');
-        const latitude =
-            this.state.location.coords.latitude +
-            Math.sin(headingInRadians) *
-                turf.helpers.lengthToDegrees(defaultX, 'meters');
-        this.setState({
-            customDests: [...this.state.customDests, { latitude, longitude }]
+        this.customObjects.forEach(({ mesh, coords }, i) => {
+            const { distanceInKilometers } = this.getDistance(
+                this.state.location.coords,
+                coords
+            );
+            const { bearingInDegrees } = this.getBearing(
+                this.state.location.coords,
+                coords
+            );
+            const correctedBearingInDegrees =
+                bearingInDegrees - this.state.initialHeading.trueHeading;
+            const correctedBearingInRadians = turf.helpers.degreesToRadians(
+                correctedBearingInDegrees
+            );
+            const distanceInMeters = distanceInKilometers * 1000;
+            mesh.position.z =
+                cameraPos.z +
+                -1 * Math.cos(correctedBearingInRadians) * distanceInMeters;
+            mesh.position.x =
+                cameraPos.x +
+                Math.sin(correctedBearingInRadians) * distanceInMeters;
         });
-        this.scene.add(mesh);
-        this.objects.push(mesh);
-        this.customObjects.push({ mesh, headingInRadians });
     };
-
-    // recalibrateCustomObjects = () => {
-    //     this.customObjects.forEach(({ mesh, headingInRadians }, i) => {
-    //         mesh.position.z = -1 * Math.cos(headingInRadians) * defaultZ;
-    //         mesh.position.x = Math.sin(headingInRadians) * defaultX;
-    //     });
-    // };
 
     _onGLContextCreate = async gl => {
         this.width = gl.drawingBufferWidth;
@@ -610,24 +639,28 @@ export default class ARExample extends React.Component {
             this.renderer
         );
 
-        await Permissions.askAsync(Permissions.LOCATION);
-        await this.getCurrentPositionAsync();
-        await this.getHeadingAsync();
-        await this.watchPositionAsync();
-        await this.watchHeadingAsync();
+        const ambient = new THREE.HemisphereLight(0x66aaff, 0x886666, 0.5);
+        ambient.position.set(-0.5, 0.75, -1);
+        this.scene.add(ambient);
+        const light = new THREE.DirectionalLight(0xffffff);
+        light.position.set(1, 0.75, 0.5);
+        this.scene.add(light);
+
+        this.scene.add(new THREE.GridHelper(10, 10));
 
         this.objects = [];
         this.customObjects = [];
         this.camera.position.setFromMatrixPosition(this.camera.matrixWorld);
+        await this.init();
         this.addDestinations();
-        let i = 0;
         const animate = () => {
+            // _onGLContextCreate animate does not stop running on unmount
+            if (this.stopAnimate) {
+                return;
+            }
             this.camera.position.setFromMatrixPosition(this.camera.matrixWorld);
-            i++;
-            if (i > 600) {
-                this.recalibrateDestinations();
-                // this.recalibrateCustomObjects();
-                i = 0;
+            if (this.recalibrateCount >= recalibrateThreshold) {
+                this.recalibrate();
             }
             requestAnimationFrame(animate);
             this.renderer.render(this.scene, this.camera);
