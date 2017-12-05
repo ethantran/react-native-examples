@@ -1,15 +1,29 @@
 import React from 'react';
-import { View, Dimensions, PanResponder } from 'react-native';
+import {
+    View,
+    Dimensions,
+    PanResponder,
+    TouchableOpacity,
+    TextInput,
+    Image,
+    Text,
+    StyleSheet,
+    ScrollView
+} from 'react-native';
 import * as THREE from 'three';
 import ExpoTHREE from 'expo-three';
-import { GLView, Location, Permissions, MapView } from 'expo';
+import { GLView, Location, Permissions, MapView, FileSystem } from 'expo';
 import * as turf from '@turf/turf';
+import qs from 'qs';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const screen = Dimensions.get('window');
 
 const ASPECT_RATIO = screen.width / screen.height;
 const LATITUDE_DELTA = 0.005;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+
+const POLY_API_KEY = 'AIzaSyDVowQMZQfFz7XsURJciLIQXZpgBDLfqIc';
 
 const destinations = [
     // cvs
@@ -79,6 +93,17 @@ const castPoint = ({ locationX: x, locationY: y }, { width, height }) => {
 
 const defaultZ = 3;
 const defaultX = 3;
+
+const Poly = {
+    getAsset: async (name, params) =>
+        (await fetch(
+            `https://poly.googleapis.com/v1/${name}/?${qs.stringify(params)}`
+        )).json(),
+    listAssets: async params =>
+        (await fetch(
+            `https://poly.googleapis.com/v1/assets/?${qs.stringify(params)}`
+        )).json()
+};
 
 export default class ARExample extends React.Component {
     state = {
@@ -232,6 +257,88 @@ export default class ARExample extends React.Component {
     // {destinations.map((dest, i) => (
     //     <MapView.Marker key="" coordinate={dest} />
     // ))}
+
+    openPolySearch = () => {
+        this.setState({ polySearch: true });
+    };
+
+    closePolySearch = () => {
+        this.setState({ polySearch: false });
+    };
+
+    handlePolySearchChangeText = polySearchText => {
+        this.setState({ polySearchText });
+    };
+
+    submitPolySearch = async () => {
+        const polySearchResults = await Poly.listAssets({
+            key: POLY_API_KEY,
+            keywords: this.state.polySearchText
+        });
+        this.setState({ polySearchResults });
+    };
+
+    handleRemoteDownload = downloadProgress => {
+        this.setState({
+            showDownloadProgess: true,
+            downloadProgress:
+                downloadProgress.totalBytesWritten /
+                downloadProgress.totalBytesExpectedToWrite * 100
+        });
+    };
+
+    handleLocalDownload = xhr => {
+        if (xhr.lengthComputable) {
+            this.setState({
+                showDownloadProgess: true,
+                downloadProgress: xhr.loaded / xhr.total * 100
+            });
+        }
+    };
+
+    selectPolyAsset = async asset => {
+        this.setState({ polySearch: false });
+        console.log('asset', asset);
+        const objFormat = asset.formats.find(
+            format => format.formatType === 'OBJ'
+        );
+        console.log('objFormat', objFormat);
+        if (!objFormat) {
+            console.error('Asset does not have obj format');
+            return;
+        }
+        const downloadResumable = FileSystem.createDownloadResumable(
+            objFormat.root.url,
+            FileSystem.documentDirectory + objFormat.root.relativePath,
+            {},
+            this.handleRemoteDownload
+        );
+        console.log('remote downloading root');
+        const rootDownload = await downloadResumable.downloadAsync();
+        console.log(rootDownload);
+        console.log('remote downloading resources');
+        const resourceDownloads = objFormat.resources.map(
+            async resource =>
+                await FileSystem.createDownloadResumable(
+                    resource.url,
+                    FileSystem.documentDirectory + resource.relativePath,
+                    {},
+                    this.handleRemoteDownload
+                ).downloadAsync()
+        );
+        console.log(resourceDownloads);
+        console.log('remote downloading complete');
+        console.log('local downloading root');
+        // await ExpoTHREE.loadAsync(
+        //     rootDownload.uri,
+        //     this.handleLocalDownload,
+        //     name => res[name]
+        // );
+        this.setState({
+            showDownloadProgess: false
+        });
+    };
+
     render() {
         return (
             <View style={{ flex: 1 }}>
@@ -266,6 +373,115 @@ export default class ARExample extends React.Component {
                             />
                         ))}
                     </MapView>
+                )}
+                {!this.state.polySearch && (
+                    <TouchableOpacity
+                        onPress={this.openPolySearch}
+                        style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 24,
+                            backgroundColor: '#fff',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            position: 'absolute',
+                            top: 8,
+                            right: 8
+                        }}
+                    >
+                        <MaterialIcons size={24} color="#000" name="search" />
+                    </TouchableOpacity>
+                )}
+                {this.state.polySearch && (
+                    <View style={[StyleSheet.absoluteFill, { padding: 8 }]}>
+                        <View style={{ flexDirection: 'row', marginBottom: 8 }}>
+                            <TextInput
+                                style={{
+                                    flex: 1,
+                                    height: 48,
+                                    borderRadius: 8,
+                                    backgroundColor: '#fff',
+                                    marginRight: 8,
+                                    padding: 8
+                                }}
+                                value={this.state.polySearchText}
+                                onChangeText={this.handlePolySearchChangeText}
+                                onSubmitEditing={this.submitPolySearch}
+                            />
+                            <TouchableOpacity
+                                onPress={this.closePolySearch}
+                                style={{
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: 24,
+                                    backgroundColor: '#fff',
+                                    justifyContent: 'center',
+                                    alignItems: 'center'
+                                }}
+                            >
+                                <MaterialIcons
+                                    size={24}
+                                    color="#000"
+                                    name="close"
+                                />
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView
+                            style={{ flex: 1, borderRadius: 8 }}
+                            contentContainerStyle={{
+                                backgroundColor: '#fff',
+                                borderRadius: 8
+                            }}
+                        >
+                            {this.state.polySearchResults &&
+                                this.state.polySearchResults.assets.map(
+                                    (asset, i) => (
+                                        <TouchableOpacity
+                                            key={asset.name}
+                                            style={{
+                                                flexDirection: 'row',
+                                                padding: 8,
+                                                marginBottom: 8
+                                            }}
+                                            onPress={() =>
+                                                this.selectPolyAsset(asset)
+                                            }
+                                        >
+                                            <Image
+                                                source={{
+                                                    uri: asset.thumbnail.url
+                                                }}
+                                                style={{
+                                                    width: 48,
+                                                    height: 48,
+                                                    borderRadius: 8,
+                                                    marginRight: 8
+                                                }}
+                                            />
+                                            <Text style={{ fontSize: 24 }}>
+                                                {asset.displayName}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )
+                                )}
+                        </ScrollView>
+                    </View>
+                )}
+                {this.showDownloadProgess && (
+                    <View
+                        style={[
+                            StyleSheet.absoluteFill,
+                            {
+                                backgroundColor: '#fff',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }
+                        ]}
+                    >
+                        <Text style={{ fontSize: 24 }}>
+                            {this.state.downloadProgress}
+                        </Text>
+                    </View>
                 )}
             </View>
         );

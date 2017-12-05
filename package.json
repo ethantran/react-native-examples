@@ -56,6 +56,7 @@
     "expo-three": "^2.0.6",
     "flubber": "^0.4.0",
     "lorem-ipsum-react-native": "^1.0.3",
+    "qs": "^6.5.1",
     "react": "16.0.0",
     "react-game-kit": "^0.0.2",
     "react-native": "https://github.com/expo/react-native/archive/sdk-23.0.0.tar.gz",
