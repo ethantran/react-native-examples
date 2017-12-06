@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+
+import PredictHQIcon from '../../assets/icons/predicthq.png';
 
 export default class HUD extends React.Component {
     render() {
@@ -39,6 +41,24 @@ export default class HUD extends React.Component {
                     }}
                 >
                     <MaterialIcons size={24} color="#000" name="map" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => this.props.onPress('predicthq')}
+                    style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        backgroundColor: '#fff',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginBottom: 8
+                    }}
+                >
+                    <Image
+                        source={PredictHQIcon}
+                        style={{ width: 24, height: 24 }}
+                        resizeMode="contain"
+                    />
                 </TouchableOpacity>
             </View>
         );

@@ -15,6 +15,7 @@ import ExpoTHREE from 'expo-three';
 import { GLView, Location, Permissions, MapView, FileSystem } from 'expo';
 import * as turf from '@turf/turf';
 import { MaterialIcons } from '@expo/vector-icons';
+import debounce from 'lodash/debounce';
 
 require('three/examples/js/loaders/OBJLoader');
 require('../../loaders/MTLLoader');
@@ -22,6 +23,7 @@ require('../../loaders/MTLLoader');
 import HUD from './HUD';
 import PolySearchView from './PolySearchView';
 import Progress from './Progress';
+import PredictHQ from '../../PredictHQ';
 
 const { scaleLongestSideToSize, alignMesh } = ExpoTHREE.utils;
 
@@ -33,6 +35,7 @@ const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 const POLY_API_KEY = 'AIzaSyDVowQMZQfFz7XsURJciLIQXZpgBDLfqIc';
 const GOOGLE_MAPS_GEOCODING_API_KEY = 'AIzaSyBzaFQvsdY9Cx5aB6tXMxrYm3jNchcvFhk';
+const PREDICTHQ_ACCESS_TOKEN = '2tOvVru3zpLQ5wa5qsuolUDzYqc5gC';
 
 // temporary save until i setup redux persist
 const savedObjects = [
@@ -160,7 +163,6 @@ export default class ARExample extends React.Component {
 
     componentDidMount() {
         console.disableYellowBox = true;
-        this.init();
     }
 
     componentWillUnmount() {
@@ -169,8 +171,8 @@ export default class ARExample extends React.Component {
         // stop listening for location and heading
         this.subs.forEach(sub => sub.remove());
 
-        // _onGLContextCreate does not stop running on unmount
-        this.stopAnimate = true;
+        // stop requestAnimationFrame infinite loop
+        cancelAnimationFrame(this.requestID);
     }
 
     init = async () => {
@@ -183,6 +185,7 @@ export default class ARExample extends React.Component {
             this.watchPositionAsync(),
             this.watchHeadingAsync()
         ]);
+        this.addSavedObjectsToScene();
     };
 
     getCurrentPositionAsync = async () => {
@@ -246,11 +249,19 @@ export default class ARExample extends React.Component {
         this.subs.push(
             await Location.watchHeadingAsync(heading => {
                 this.setState({ heading });
+                // this.animateToBearing(heading);
             })
         );
     };
 
     // map
+
+    // attempt to rotate map when heading changes
+    // BUG: crashes
+    animateToBearing = heading => {
+        this.map && this.map.animateToBearing(heading);
+    };
+    animateToBearing = debounce(this.animateToBearing, 1000);
 
     onRegionChange = region => {
         this.setState({ region });
@@ -447,11 +458,72 @@ export default class ARExample extends React.Component {
         // });
     };
 
-    handleHUD = type => {
+    handleHUD = async type => {
         if (type === 'search') {
             this.openPolySearch();
         } else if (type === 'map') {
             this.toggleMap();
+        } else if (type === 'predicthq') {
+            try {
+                // get events within a radius
+                const radius = 50;
+                const unit = 'm';
+                const results = await PredictHQ.events.search(
+                    {
+                        within: `${radius}${unit}@${
+                            this.state.location.coords.latitude
+                        },${this.state.location.coords.longitude}`
+                    },
+                    {
+                        headers: {
+                            Accept: 'application/json',
+                            Authorization: `Bearer ${PREDICTHQ_ACCESS_TOKEN}`
+                        }
+                    }
+                );
+                // predicthq still gives events outside radius
+                // remove events with location outside radius
+                const events = results.results.filter(event => {
+                    const { distanceInKilometers } = this.getDistance(
+                        this.state.location.coords,
+                        {
+                            longitude: event.location[0],
+                            latitude: event.location[1]
+                        }
+                    );
+                    const distanceInMeters = distanceInKilometers * 1000;
+                    return distanceInMeters < radius;
+                });
+
+                // not sure why i should do this, copied from somewhere
+                this.camera.position.setFromMatrixPosition(
+                    this.camera.matrixWorld
+                );
+
+                // get camera position
+                const cameraPos = new THREE.Vector3(0, 0, 0);
+                cameraPos.applyMatrix4(this.camera.matrixWorld);
+
+                // create default mesh for each event
+                const newObjects = [...this.state.objects];
+                events.forEach((event, i) => {
+                    const newObject = {
+                        ...event,
+                        longitude: event.location[0],
+                        latitude: event.location[1]
+                    };
+                    const geometry = geometries[0];
+                    const material = materials[0];
+                    const mesh = new THREE.Mesh(geometry, material);
+                    newObject.mesh = mesh;
+                    this.scene.add(newObject.mesh);
+                    this.calibrateObject(newObject, cameraPos);
+                    newObjects.push(newObject);
+                });
+                this.setState({ objects: newObjects });
+            } catch (error) {
+                console.error(error);
+            }
         }
     };
 
@@ -467,6 +539,18 @@ export default class ARExample extends React.Component {
         this.setState({ showMap: !this.state.showMap });
     };
 
+    renderObjectMarker = (obj, i) => {
+        return (
+            <MapView.Marker
+                key={obj.id || 'custom' + i}
+                coordinate={{
+                    latitude: obj.latitude,
+                    longitude: obj.longitude
+                }}
+            />
+        );
+    };
+
     render() {
         return (
             <View style={{ flex: 1 }}>
@@ -479,6 +563,7 @@ export default class ARExample extends React.Component {
                 {this.state.location &&
                     this.state.showMap && (
                         <MapView
+                            ref={c => (this.map = c)}
                             style={{
                                 position: 'absolute',
                                 bottom: 0,
@@ -489,22 +574,13 @@ export default class ARExample extends React.Component {
                             initialRegion={this.state.region}
                             region={this.state.region}
                             onRegionChange={this.onRegionChange}
-                            showsUserLocation
-                            followsUserLocation
-                            showsCompass
+                            showsUserLocation={false}
+                            followsUserLocation={false}
                         >
                             <MapView.Marker
                                 coordinate={this.state.location.coords}
                             />
-                            {this.state.objects.map((obj, i) => (
-                                <MapView.Marker
-                                    key={'custom' + i}
-                                    coordinate={{
-                                        latitude: obj.latitude,
-                                        longitude: obj.longitude
-                                    }}
-                                />
-                            ))}
+                            {this.state.objects.map(this.renderObjectMarker)}
                         </MapView>
                     )}
                 <HUD onPress={this.handleHUD} />
@@ -538,7 +614,7 @@ export default class ARExample extends React.Component {
             // default object type place handler
             if (object.type === 'place') {
                 const geometry = geometries[0];
-                const material = materials[i];
+                const material = materials[i % materials.length];
                 const mesh = new THREE.Mesh(geometry, material);
                 newObject.mesh = mesh;
             } else if (object.type === 'poly') {
@@ -619,6 +695,11 @@ export default class ARExample extends React.Component {
     };
 
     addObject = object => {
+        if (!object.type || !object.mesh) {
+            console.error('type or mesh missing');
+            return;
+        }
+
         // not sure why i should do this, copied from somewhere
         this.camera.position.setFromMatrixPosition(this.camera.matrixWorld);
 
@@ -724,9 +805,6 @@ export default class ARExample extends React.Component {
         // not sure if i need to do this, copied from somewhere
         this.camera.position.setFromMatrixPosition(this.camera.matrixWorld);
 
-        // start geolocation and heading tracking here so the initial location and initial heading is as accurate as possible
-        await this.init();
-
         // used for touch events to see if we touched an object
         this.raycaster = new THREE.Raycaster();
 
@@ -736,23 +814,20 @@ export default class ARExample extends React.Component {
         // need to track objects in the scene for caching, recalibrating,
         this.objects = [];
 
-        this.addSavedObjectsToScene();
-
         const animate = () => {
-            // _onGLContextCreate animate does not stop running on unmount
-            if (this.stopAnimate) {
-                return;
-            }
-
             // recalibrate only if geolocation updates a certain number of times
             if (this.recalibrateCount >= recalibrateThreshold) {
                 this.recalibrate();
             }
 
-            requestAnimationFrame(animate);
+            this.requestID = requestAnimationFrame(animate);
             this.renderer.render(this.scene, this.camera);
             gl.endFrameEXP();
         };
         animate();
+
+        // start geolocation and heading tracking here so the initial location and
+        // initial heading is as accurate as possible
+        this.init();
     };
 }
