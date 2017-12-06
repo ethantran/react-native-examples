@@ -7,49 +7,32 @@ import {
     ActivityIndicator
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { connect } from 'react-redux';
 
-import Poly from '../../Poly';
 import PolyAssetListView from './PolyAssetListView';
+import { close, selectAsset, listAssets, loadMore } from './actions/poly';
 
-export default class PolySearchView extends React.Component {
-    state = {
+class PolySearchView extends React.Component {
+    static defaultProps = {
         assets: []
     };
+
+    state = {};
 
     handleChangeText = text => {
         this.setState({ text });
     };
 
-    handleSubmitEditing = async () => {
-        this.setState({ loading: true });
-        const results = await Poly.listAssets({
-            key: this.props.apiKey,
-            keywords: this.state.text
-        });
-        const assets = results.assets.filter(asset =>
-            asset.formats.find(format => format.formatType === 'OBJ')
-        );
-        this.setState({ ...results, assets, loading: false });
+    handleSubmitEditing = () => {
+        this.props.onSubmitEditing(this.state.text);
     };
 
-    handleLoadMore = async () => {
-        this.setState({ loadingMore: true });
-        const results = await Poly.listAssets({
-            key: this.props.apiKey,
-            pageToken: this.state.nextPageToken
-        });
-        const assets = results.assets.filter(asset =>
-            asset.formats.find(format => format.formatType === 'OBJ')
-        );
-        this.setState({
-            ...results,
-            assets: [...this.state.assets, ...assets],
-            loadingMore: false
-        });
+    handleLoadMore = () => {
+        this.props.onLoadMore();
     };
 
     render() {
-        return (
+        return this.props.show ? (
             <View style={[StyleSheet.absoluteFill, { padding: 8 }]}>
                 <View style={{ flexDirection: 'row', marginBottom: 8 }}>
                     <TextInput
@@ -66,7 +49,7 @@ export default class PolySearchView extends React.Component {
                         onSubmitEditing={this.handleSubmitEditing}
                     />
                     <TouchableOpacity
-                        onPress={this.props.close}
+                        onPress={this.props.onClose}
                         style={{
                             width: 48,
                             height: 48,
@@ -79,16 +62,16 @@ export default class PolySearchView extends React.Component {
                         <MaterialIcons size={24} color="#000" name="close" />
                     </TouchableOpacity>
                 </View>
-                {this.state.assets.length > 0 && (
+                {this.props.assets.length > 0 && (
                     <PolyAssetListView
-                        assets={this.state.assets}
-                        onPress={this.props.selectAsset}
-                        canLoadMore={this.state.nextPageToken}
+                        assets={this.props.assets}
+                        onPress={this.props.onSelectAsset}
+                        canLoadMore={this.props.nextPageToken}
                         onLoadMore={this.handleLoadMore}
-                        loadingMore={this.state.loadingMore}
+                        loadingMore={this.props.loadingMore}
                     />
                 )}
-                {this.state.loading && (
+                {this.props.loading && (
                     <View
                         style={[
                             StyleSheet.absoluteFill,
@@ -102,6 +85,17 @@ export default class PolySearchView extends React.Component {
                     </View>
                 )}
             </View>
-        );
+        ) : null;
     }
 }
+
+const mapStateToProps = state => state.poly;
+
+const mapDispatchToProps = {
+    onClose: close,
+    onSelectAsset: selectAsset,
+    onSubmitEditing: listAssets,
+    onLoadMore: loadMore
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(PolySearchView);

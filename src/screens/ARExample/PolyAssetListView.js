@@ -22,7 +22,7 @@ export default ({ assets, canLoadMore, onLoadMore, loadingMore, onPress }) => (
         }}
     >
         {assets.map((asset, i) => (
-            <PolyAssetView asset={asset} onPress={onPress} />
+            <PolyAssetView key={asset.name} asset={asset} onPress={onPress} />
         ))}
         {canLoadMore && (
             <TouchableOpacity

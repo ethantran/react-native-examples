@@ -14,6 +14,12 @@ const GoogleMaps = {
                     params
                 )}`
             )).json(),
+        textsearch: async params =>
+            (await fetch(
+                `https://maps.googleapis.com/maps/api/place/textsearch/output?${qs.stringify(
+                    params
+                )}`
+            )).json(),
         details: async params =>
             (await fetch(
                 `https://maps.googleapis.com/maps/api/place/details/output?${qs.stringify(
