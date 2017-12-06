@@ -4,15 +4,14 @@ import { TouchableOpacity, Image, Dimensions } from 'react-native';
 const { width } = Dimensions.get('window');
 
 const ROW_COUNT = 3;
-const SIZE = width / ROW_COUNT - 8 * 2;
+const SIZE = width / ROW_COUNT - 12;
 
-export default ({ asset, onPress }) => (
+export default ({ asset, onPress, index }) => (
     <TouchableOpacity
         key={asset.name}
         style={{
             flexDirection: 'row',
-            marginBottom: 8,
-            marginRight: 8
+            marginBottom: 8
         }}
         onPress={() => onPress(asset)}
     >

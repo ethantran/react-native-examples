@@ -12,7 +12,9 @@ import Poly from '../../Poly';
 import PolyAssetListView from './PolyAssetListView';
 
 export default class PolySearchView extends React.Component {
-    state = {};
+    state = {
+        assets: []
+    };
 
     handleChangeText = text => {
         this.setState({ text });
@@ -24,7 +26,26 @@ export default class PolySearchView extends React.Component {
             key: this.props.apiKey,
             keywords: this.state.text
         });
-        this.setState({ results, loading: false });
+        const assets = results.assets.filter(asset =>
+            asset.formats.find(format => format.formatType === 'OBJ')
+        );
+        this.setState({ ...results, assets, loading: false });
+    };
+
+    handleLoadMore = async () => {
+        this.setState({ loadingMore: true });
+        const results = await Poly.listAssets({
+            key: this.props.apiKey,
+            pageToken: this.state.nextPageToken
+        });
+        const assets = results.assets.filter(asset =>
+            asset.formats.find(format => format.formatType === 'OBJ')
+        );
+        this.setState({
+            ...results,
+            assets: [...this.state.assets, ...assets],
+            loadingMore: false
+        });
     };
 
     render() {
@@ -58,10 +79,13 @@ export default class PolySearchView extends React.Component {
                         <MaterialIcons size={24} color="#000" name="close" />
                     </TouchableOpacity>
                 </View>
-                {this.state.results && (
+                {this.state.assets.length > 0 && (
                     <PolyAssetListView
-                        results={this.state.results}
+                        assets={this.state.assets}
                         onPress={this.props.selectAsset}
+                        canLoadMore={this.state.nextPageToken}
+                        onLoadMore={this.handleLoadMore}
+                        loadingMore={this.state.loadingMore}
                     />
                 )}
                 {this.state.loading && (
@@ -69,7 +93,6 @@ export default class PolySearchView extends React.Component {
                         style={[
                             StyleSheet.absoluteFill,
                             {
-                                backgroundColor: '#fff',
                                 alignItems: 'center',
                                 justifyContent: 'center'
                             }

@@ -317,13 +317,18 @@ export default class ARExample extends React.Component {
         });
     };
 
-    handleLocalDownload = xhr => {
-        if (xhr.lengthComputable) {
-            this.setState({
-                showDownloadProgress: true,
-                downloadProgress: xhr.loaded / xhr.total * 100
-            });
-        }
+    handleLoaderProgress = xhr => {
+        this.setState({
+            showDownloadProgress: true,
+            downloadProgress: xhr.loaded / xhr.total * 100
+        });
+    };
+
+    handleLoaderError = error => {
+        console.error(error);
+        this.setState({
+            showDownloadProgress: false
+        });
     };
 
     /**
@@ -334,8 +339,38 @@ export default class ARExample extends React.Component {
         const objFormat = asset.formats.find(
             format => format.formatType === 'OBJ'
         );
-        if (!objFormat) {
-            console.error('Asset does not have obj format');
+        if (objFormat) {
+            const urlOBJ = objFormat.root.url;
+            const urlMTL = objFormat.resources[0].url;
+            const mtlloader = new THREE.MTLLoader();
+            mtlloader.load(
+                urlMTL,
+                mats => {
+                    const objloader = new THREE.OBJLoader();
+                    objloader.setMaterials(mats);
+                    objloader.load(
+                        urlOBJ,
+                        mesh => {
+                            const object = {
+                                type: 'poly',
+                                mesh,
+                                asset
+                            };
+                            this.addObject(object);
+                            this.setState({
+                                selection: object,
+                                showDownloadProgress: false
+                            });
+                        },
+                        this.handleLoaderProgress,
+                        this.handleLoaderError
+                    );
+                },
+                this.handleLoaderProgress,
+                this.handleLoaderError
+            );
+        } else {
+            console.error('Asset must have an obj format');
             return;
         }
         // const downloadResumable = FileSystem.createDownloadResumable(
@@ -410,34 +445,6 @@ export default class ARExample extends React.Component {
         //     polySelection: { mesh },
         //     showDownloadProgress: false
         // });
-
-        var urlOBJ = objFormat.root.url;
-        var urlMTL = objFormat.resources[0].url;
-        var mtlloader = new THREE.MTLLoader();
-        mtlloader.load(
-            urlMTL,
-            mats => {
-                var objloader = new THREE.OBJLoader();
-                objloader.setMaterials(mats);
-                objloader.load(
-                    urlOBJ,
-                    mesh => {
-                        const object = {
-                            type: 'poly',
-                            mesh,
-                            asset
-                        };
-                        this.addObject(object);
-                        this.setState({
-                            selection: object,
-                            showDownloadProgress: false
-                        });
-                    },
-                    this.handleLocalDownload
-                );
-            },
-            this.handleLocalDownload
-        );
     };
 
     handleHUD = type => {
