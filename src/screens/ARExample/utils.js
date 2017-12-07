@@ -40,6 +40,7 @@ export const getRhumbBearing = (coord1, coord2) => {
     };
 };
 
+// what is the difference between this and getWorldRotation()
 export const getCameraPosition = camera => {
     // not sure why i should do this, copied from somewhere
     camera.position.setFromMatrixPosition(camera.matrixWorld);
@@ -87,13 +88,39 @@ export const calibrateObject = (
         cameraPos.x + Math.sin(correctedBearingInRadians) * distanceInMeters;
 };
 
-// not sure why x and y are modified, copied from expo three demos
+export const placeObjectFromCamera = (camera, object, distanceInMeters) => {
+    const position = getCameraPosition(camera);
+    const rotation = camera.getWorldRotation();
+    placeObject(object, position, rotation, distanceInMeters);
+};
+
+// push object from position at angle
+export const placeObject = (object, position, rotation, distanceInMeters) => {
+    object.position.copy(position);
+    const { x, y, z } = calculatePosition(
+        distanceInMeters,
+        rotation.y,
+        rotation.x
+    );
+    object.translateX(-1 * z);
+    object.translateY(y);
+    object.translateZ(-1 * x);
+};
+
+// position given two angles and a distance
+// https://math.stackexchange.com/questions/1385137/calculate-3d-vector-out-of-two-angles-and-vector-length
+export const calculatePosition = (r, betaAngle, alphaAngle) => {
+    const x = r * Math.cos(betaAngle) * Math.cos(alphaAngle);
+    const y = r * Math.cos(betaAngle) * Math.sin(alphaAngle);
+    const z = r * Math.sin(betaAngle);
+    return { x, y, z };
+};
+
 export const castPoint = (
     { locationX: x, locationY: y },
     { width, height }
 ) => {
     let touch = new THREE.Vector2();
-    // touch.set( x, y);
     touch.set(x / width * 2 - 1, -(y / height) * 2 + 1);
     return touch;
 };

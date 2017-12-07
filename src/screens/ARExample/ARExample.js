@@ -3,14 +3,23 @@ import { View, PanResponder, Dimensions } from 'react-native';
 import { GLView, Location, Permissions, MapView, FileSystem } from 'expo';
 import debounce from 'lodash/debounce';
 import { connect } from 'react-redux';
+import * as THREE from 'three';
+import * as turf from '@turf/turf';
 
 require('three/examples/js/loaders/OBJLoader');
 require('../../loaders/MTLLoader');
 
+import { GEOMETRIES, MATERIALS } from './constants';
 import HUD from './HUD';
+import HUDSelection from './HUDSelection';
 import PolySearchView from './PolySearchView';
 import Progress from './Progress';
-import { getCameraPosition, calibrateObject, castPoint } from './utils';
+import {
+    getCameraPosition,
+    calibrateObject,
+    placeObjectFromCamera,
+    castPoint
+} from './utils';
 import {
     setupARKit,
     setInitialLocation,
@@ -28,6 +37,7 @@ const screen = Dimensions.get('window');
 const ASPECT_RATIO = screen.width / screen.height;
 const LATITUDE_DELTA = 0.005;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+const defaultPlaceDistance = 3;
 
 // temporary save until i setup redux persist
 const savedObjects = [
@@ -73,50 +83,26 @@ const createRegionWithLocation = location => ({
 const recalibrateThreshold = 1;
 
 class ARExample extends React.Component {
-    state = {
-        objects: []
-    };
-    /**
-     * Subscriptions for location and heading tracking
-     */
-    subs = [];
-    panResponder = PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onPanResponderGrant: (event, gestureState) => {
-            let touch = castPoint(event.nativeEvent, {
-                width: this.props.width,
-                height: this.props.height
-            });
-            this.props.raycaster.setFromCamera(touch, this.props.camera);
-
-            // Find all intersected meshes
-            let intersects = this.props.raycaster.intersectObjects(
-                this.props.meshes
-            );
-
-            // handle intersections
-            if (intersects.length > 0) {
-                this.handleSelection(intersects[0]);
-            } else {
-                this.handleCreateGeometry();
-            }
-        },
-        onPanResponderMove: (event, gestureState) => {
-            let touch = castPoint(event.nativeEvent, {
-                width: this.props.width,
-                height: this.props.height
-            });
-            this.props.raycaster.setFromCamera(touch, this.props.camera);
-
-            // if selected an object
-            if (this.props.selection) {
-                // this.props.selection.mesh.position.x += gestureState.dx;
-            }
-        },
-        onPanResponderRelease: () => {},
-        onPanResponderTerminate: () => {},
-        onShouldBlockNativeResponder: () => false
-    });
+    constructor(props) {
+        super(props);
+        this.state = {
+            objects: []
+        };
+        /**
+         * Subscriptions for location and heading tracking
+         */
+        this.subs = [];
+        this.panResponder = PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onPanResponderGrant: this.handlePanResponderGrant,
+            onPanResponderMove: this.handlePanResponderMove,
+            onPanResponderRelease: this.handlePanResponderRelease,
+            onPanResponderTerminate: () => {
+                clearTimeout(this.longPressTimeoutId);
+            },
+            onShouldBlockNativeResponder: () => false
+        });
+    }
 
     componentDidMount() {
         console.disableYellowBox = true;
@@ -246,7 +232,6 @@ class ARExample extends React.Component {
     };
 
     render() {
-        console.log('render')
         return (
             <View style={{ flex: 1 }}>
                 <GLView
@@ -279,6 +264,7 @@ class ARExample extends React.Component {
                         </MapView>
                     )}
                 <HUD />
+                <HUDSelection />
                 <PolySearchView />
                 <Progress />
             </View>
@@ -313,12 +299,38 @@ class ARExample extends React.Component {
     //     this.setState({ objects: newObjects });
     // };
 
+    handlePanResponderGrant = (event, gestureState) => {
+        let touch = castPoint(event.nativeEvent, {
+            width: this.props.width,
+            height: this.props.height
+        });
+        this.props.raycaster.setFromCamera(touch, this.props.camera);
+
+        // Find all intersected meshes
+        let intersects = this.props.raycaster.intersectObjects(
+            this.props.meshes
+        );
+
+        // handle intersections
+        if (intersects.length > 0) {
+            this.handleIntersection(event, gestureState, intersects[0]);
+        } else {
+            this.handleCreateGeometry();
+        }
+    };
+
     /**
      * Provide different interactions based on object type
      */
-    handleSelection = selection => {
+    handleIntersection = (event, gestureState, intersection) => {
         // need to store selection because it can be used for pan responder move, animate, or render
-        this.props.selectObject(selection);
+        // get object that contains selected mesh
+        // this.props.selectObject(selection);
+        console.log('handleSelection');
+        this.longPressTimeoutId = setTimeout(() => {
+            console.log('longpress');
+            this.longpress = intersection;
+        }, 1000);
     };
 
     /**
@@ -327,14 +339,44 @@ class ARExample extends React.Component {
      */
     handleCreateGeometry = () => {
         const selection = this.props.selection;
-        let object = {};
         if (selection) {
-            object.type = selection.type;
             if (selection.type === 'poly') {
-                object.mesh = selection.mesh.clone();
+                this.props.copy(selection);
             }
+        } else {
+            if (this.props.meshes.length > 0) {
+                return;
+            }
+            const mesh = new THREE.Mesh(GEOMETRIES[0], MATERIALS[0]);
+            placeObjectFromCamera(
+                this.props.camera,
+                mesh,
+                defaultPlaceDistance
+            );
+            this.props.scene.add(mesh);
+            this.props.meshes.push(mesh);
+            // this.props.addObjectAtHeading(object);
         }
-        this.props.addObjectAtHeading(object);
+    };
+
+    handlePanResponderMove = (event, gestureState) => {
+        let touch = castPoint(event.nativeEvent, {
+            width: this.props.width,
+            height: this.props.height
+        });
+        this.props.raycaster.setFromCamera(touch, this.props.camera);
+
+        // if selected an object
+        if (this.props.selection) {
+            // this.props.selection.mesh.position.x += gestureState.dx;
+        }
+    };
+
+    handlePanResponderRelease = () => {
+        clearTimeout(this.longPressTimeoutId);
+        if (this.longpress) {
+            this.longpress = false;
+        }
     };
 
     // adjust mesh positions to new geolocation
@@ -371,6 +413,14 @@ class ARExample extends React.Component {
                 this.recalibrate();
             }
 
+            if (this.longpress) {
+                placeObjectFromCamera(
+                    this.props.camera,
+                    this.longpress.object,
+                    defaultPlaceDistance
+                );
+            }
+
             this.requestID = requestAnimationFrame(animate);
             renderer.render(scene, camera);
             gl.endFrameEXP();
@@ -385,6 +435,7 @@ class ARExample extends React.Component {
 
 const mapStateToProps = state => ({
     initialHeading: state.heading.initialHeading,
+    currentHeading: state.heading.currentHeading,
     currentLocation: state.location.currentLocation,
     ...state.three
 });

@@ -7,7 +7,7 @@ const initialState = {
     raycaster: new THREE.Raycaster(),
     // need to track meshes for raycaster
     meshes: [],
-    // need to track objects in the scene for caching, recalibrating,
+    // need to track objects in the scene for recalibrating mesh,
     objects: []
 };
 
@@ -18,12 +18,17 @@ export default function(state = initialState, action) {
         case ADD_OBJECT:
             return {
                 ...state,
-                objects: [...state.objects, action.object]
+                objects: [...state.objects, action.object],
+                meshes: [...state.meshes, action.object.mesh]
             };
         case ADD_OBJECTS:
             return {
                 ...state,
-                objects: [...state.objects, ...action.objects]
+                objects: [...state.objects, ...action.objects],
+                meshes: [
+                    ...state.meshes,
+                    ...action.objects.map(object => object.mesh)
+                ]
             };
         case SELECT_OBJECT:
             return {

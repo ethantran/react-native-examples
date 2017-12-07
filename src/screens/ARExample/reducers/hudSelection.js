@@ -1,17 +1,17 @@
-import { OPEN as OPEN_POLY, CLOSE as CLOSE_POLY } from '../actions/poly';
+import { HUD_RESIZE, HUD_CLOSE } from '../actions/hudSelection';
 
 const initialState = {
-    show: true
+    show: false
 };
 
 export default function(state = initialState, action) {
     switch (action.type) {
-        case OPEN_POLY:
+        case HUD_RESIZE:
             return {
                 ...state,
                 show: false
             };
-        case CLOSE_POLY:
+        case HUD_CLOSE:
             return {
                 ...state,
                 show: true
