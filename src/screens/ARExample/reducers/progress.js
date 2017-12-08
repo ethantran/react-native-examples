@@ -1,7 +1,7 @@
 import { SET_PROGRESS, CLOSE_PROGRESS } from '../actions/progress';
 
 const initialState = {
-    show: false,
+    visible: false,
     progress: 0
 };
 
@@ -10,13 +10,13 @@ export default function(state = initialState, action) {
         case SET_PROGRESS:
             return {
                 ...state,
-                show: true,
+                visible: true,
                 progress: action.progress
             };
         case CLOSE_PROGRESS:
             return {
                 ...state,
-                show: false
+                visible: false
             };
         default:
             return state;

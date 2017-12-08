@@ -1,4 +1,4 @@
-// hud to show when an object is selected
+// hud when an object is selected
 
 import React from 'react';
 import { View, TouchableOpacity, Image, StyleSheet } from 'react-native';
@@ -15,46 +15,51 @@ import {
 } from './actions/hudSelection';
 
 class HUDSelection extends React.Component {
+    handleTranslate = () => this.props.onTranslate(this.props.selection);
+    handleScaleUp = () => this.props.onScaleUp(this.props.selection);
+    handleScaleDown = () => this.props.onScaleDown(this.props.selection);
+    handleDelete = () => this.props.onDelete(this.props.selection);
+    handleCopy = () => this.props.onCopy(this.props.selection);
+    handleDone = () => this.props.onDone(this.props.selection);
     render() {
-        return this.props.show ? (
+        return this.props.visible ? (
             <View style={styles.container}>
                 <TouchableOpacity
-                    onPress={this.props.onTranslate}
+                    onPress={this.handleTranslate}
                     style={styles.button}
                 >
                     <MaterialCommunityIcons
                         size={24}
                         color="#000"
-                        name="
-                        move-resize-variant"
+                        name="move-resize-variant"
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
-                    onPress={this.props.onScaleUp}
+                    onPress={this.handleScaleUp}
                     style={styles.button}
                 >
                     <MaterialIcons size={24} color="#000" name="add" />
                 </TouchableOpacity>
                 <TouchableOpacity
-                    onPress={this.props.onScaleDown}
+                    onPress={this.handleScaleDown}
                     style={styles.button}
                 >
                     <MaterialIcons size={24} color="#000" name="remove" />
                 </TouchableOpacity>
                 <TouchableOpacity
-                    onPress={this.props.onDelete}
+                    onPress={this.handleDelete}
                     style={styles.button}
                 >
                     <MaterialIcons size={24} color="#000" name="delete" />
                 </TouchableOpacity>
                 <TouchableOpacity
-                    onPress={this.props.onCopy}
+                    onPress={this.handleCopy}
                     style={styles.button}
                 >
                     <MaterialIcons size={24} color="#000" name="content-copy" />
                 </TouchableOpacity>
                 <TouchableOpacity
-                    onPress={this.props.onDone}
+                    onPress={this.handleDone}
                     style={styles.button}
                 >
                     <MaterialIcons size={24} color="#000" name="done" />
@@ -82,7 +87,10 @@ const styles = StyleSheet.create({
     image: { width: 24, height: 24 }
 });
 
-const mapStateToProps = state => state.hudSelection;
+const mapStateToProps = state => ({
+    ...state.hudSelection,
+    selection: state.three.selection
+});
 
 const mapDispatchToProps = {
     onTranslate: translate,

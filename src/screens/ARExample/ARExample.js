@@ -12,6 +12,7 @@ require('../../loaders/MTLLoader');
 import { GEOMETRIES, MATERIALS } from './constants';
 import HUD from './HUD';
 import HUDSelection from './HUDSelection';
+import GeometryListView from './GeometryListView';
 import PolySearchView from './PolySearchView';
 import Progress from './Progress';
 import {
@@ -30,7 +31,7 @@ import {
     addObject,
     addObjects,
     addObjectAtHeading,
-    selectObject
+    selectObject3D
 } from './actions/ar';
 
 const screen = Dimensions.get('window');
@@ -154,8 +155,8 @@ class ARExample extends React.Component {
 
     /**
      * increment recalibrateCount after updating location
-     * because we want to make sure all meshes are in an an accurate
-     * spot no matter where you move by recalibrating the mesh position
+     * because we want to make sure all object3Ds are in an an accurate
+     * spot no matter where you move by recalibrating the object3D position
      * after so many updates
      * TODO: recalibrate based on a radius from last calibration
      * if location distance from calibration location
@@ -265,6 +266,7 @@ class ARExample extends React.Component {
                     )}
                 <HUD />
                 <HUDSelection />
+                <GeometryListView />
                 <PolySearchView />
                 <Progress />
             </View>
@@ -288,11 +290,11 @@ class ARExample extends React.Component {
     //         if (object.type === 'place') {
     //             const geometry = GEOMETRIES[0];
     //             const material = MATERIALS[i % MATERIALS.length];
-    //             const mesh = new THREE.Mesh(geometry, material);
-    //             newObject.mesh = mesh;
+    //             const object3D = new THREE.Mesh(geometry, material);
+    //             newObject.object3D = object3D;
     //         } else if (object.type === 'poly') {
     //         }
-    //         this.scene.add(newObject.mesh);
+    //         this.scene.add(newObject.object3D);
     //         this.calibrateObject(newObject, cameraPos);
     //         newObjects.push(newObject);
     //     });
@@ -306,16 +308,25 @@ class ARExample extends React.Component {
         });
         this.props.raycaster.setFromCamera(touch, this.props.camera);
 
-        // Find all intersected meshes
+        // visualize raycaster
+        if (this.arrow) {
+            this.props.scene.remove(this.arrow);
+        }
+        this.arrow = new THREE.ArrowHelper(
+            this.props.raycaster.ray.direction,
+            this.props.raycaster.ray.origin,
+            100,
+            Math.random() * 0xffffff
+        );
+        this.props.scene.add(this.arrow);
+
+        // Find all intersected object3Ds
         let intersects = this.props.raycaster.intersectObjects(
-            this.props.meshes
+            this.props.object3Ds
         );
 
-        // handle intersections
         if (intersects.length > 0) {
             this.handleIntersection(event, gestureState, intersects[0]);
-        } else {
-            this.handleCreateGeometry();
         }
     };
 
@@ -324,38 +335,14 @@ class ARExample extends React.Component {
      */
     handleIntersection = (event, gestureState, intersection) => {
         // need to store selection because it can be used for pan responder move, animate, or render
-        // get object that contains selected mesh
-        // this.props.selectObject(selection);
-        console.log('handleSelection');
-        this.longPressTimeoutId = setTimeout(() => {
-            console.log('longpress');
-            this.longpress = intersection;
-        }, 1000);
-    };
-
-    /**
-     * if selected something
-     * if selection is a poly asset, clone it
-     */
-    handleCreateGeometry = () => {
-        const selection = this.props.selection;
-        if (selection) {
-            if (selection.type === 'poly') {
-                this.props.copy(selection);
-            }
+        this.props.selectObject3D(intersection.object);
+        console.log('handleIntersection');
+        if (event.nativeEvent.touches.length === 2) {
         } else {
-            if (this.props.meshes.length > 0) {
-                return;
-            }
-            const mesh = new THREE.Mesh(GEOMETRIES[0], MATERIALS[0]);
-            placeObjectFromCamera(
-                this.props.camera,
-                mesh,
-                defaultPlaceDistance
-            );
-            this.props.scene.add(mesh);
-            this.props.meshes.push(mesh);
-            // this.props.addObjectAtHeading(object);
+            this.longPressTimeoutId = setTimeout(() => {
+                console.log('longpress');
+                this.longpress = intersection;
+            }, 1000);
         }
     };
 
@@ -368,7 +355,7 @@ class ARExample extends React.Component {
 
         // if selected an object
         if (this.props.selection) {
-            // this.props.selection.mesh.position.x += gestureState.dx;
+            // this.props.selection.object3D.position.x += gestureState.dx;
         }
     };
 
@@ -379,7 +366,7 @@ class ARExample extends React.Component {
         }
     };
 
-    // adjust mesh positions to new geolocation
+    // adjust object3D positions to new geolocation
     recalibrate = () => {
         // animate could run before we have a location and heading
         if (!this.props.currentLocation || !this.props.initialHeading) {
@@ -450,7 +437,7 @@ const mapDispatchToProps = {
     addObject,
     addObjects,
     addObjectAtHeading,
-    selectObject
+    selectObject3D
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(ARExample);

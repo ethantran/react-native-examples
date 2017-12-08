@@ -9,10 +9,10 @@ const initialState = [];
 export default function(state = initialState, action) {
     switch (action.type) {
         case ADD_OBJECT:
-            // remove mesh beacuse we don't want to store that
-            return [...state, omit(action.object, 'mesh')];
+            // remove object3D beacuse we don't want to store that
+            return [...state, omit(action.object, 'object3D')];
         case ADD_OBJECTS:
-            return [...state, ...action.objects.map(o => omit(o, 'mesh'))];
+            return [...state, ...action.objects.map(o => omit(o, 'object3D'))];
         default:
             return state;
     }

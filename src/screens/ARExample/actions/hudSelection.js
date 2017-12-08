@@ -4,24 +4,34 @@ export const HUD_RESIZE = 'hudSelection/RESIZE';
 export const HUD_CLOSE = 'hudSelection/CLOSE';
 
 export const resize = () => ({ type: HUD_RESIZE });
-export const scaleUp = mesh => {
-    mesh.set(mesh.scale.x + 1, mesh.scale.y + 1, mesh.scale.z + 1);
+export const translate = addObjectAtHeading;
+export const scaleUp = (object, value = 1) => dispatch => {
+    object.object3D.scale.set(
+        object.object3D.scale.x + object.object3D.scale.x * 0.1,
+        object.object3D.scale.y + object.object3D.scale.y * 0.1,
+        object.object3D.scale.z + object.object3D.scale.z * 0.1
+    );
 };
-export const scaleDown = mesh => {
-    mesh.set(mesh.scale.x - 1, mesh.scale.y - 1, mesh.scale.z - 1);
+export const scaleDown = (object, value = 1) => dispatch => {
+    object.object3D.scale.set(
+        object.object3D.scale.x - object.object3D.scale.x * 0.1,
+        object.object3D.scale.y - object.object3D.scale.y * 0.1,
+        object.object3D.scale.z - object.object3D.scale.z * 0.1
+    );
 };
-export const copy = selection => dispatch => {
-    let object = {};
-    object.type = selection.type;
-    object.mesh = selection.mesh.clone();
+export const copy = selectedObject => dispatch => {
+    const object = {
+        ...selectedObject,
+        object3D: selectedObject.object3D.clone()
+    };
     dispatch(addObjectAtHeading(object));
 };
 /**
- * Remove mesh from scene and object from store
+ * Remove object3D from scene and object from store
  */
-export const remove = selection => (dispatch, getState) => {
+export const remove = selectedObject => (dispatch, getState) => {
     const { three: { scene } } = getState();
-    scene.remove(selection.mesh);
-    dispatch(removeObject(selection));
+    scene.remove(selectedObject.object3D);
+    dispatch(removeObject(selectedObject));
 };
 export const close = () => ({ type: HUD_CLOSE });

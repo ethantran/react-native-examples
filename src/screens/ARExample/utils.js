@@ -1,5 +1,8 @@
 import * as turf from '@turf/turf';
 import * as THREE from 'three';
+import { Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
 
 export const getDistance = (coord1, coord2) => {
     const from = turf.point([coord1.longitude, coord1.latitude]);
@@ -81,10 +84,10 @@ export const calibrateObject = (
     // camera position is the best guess of where we are, current geolocation to three.js position
     // camera position can be not in synce with current geolocation if geo is not updating when we move
     // TODO: perhaps finding a geolocation from the initial geolocation and the camera position's distance from origin is better
-    object.mesh.position.z =
+    object.object3D.position.z =
         cameraPos.z +
         -1 * Math.cos(correctedBearingInRadians) * distanceInMeters;
-    object.mesh.position.x =
+    object.object3D.position.x =
         cameraPos.x + Math.sin(correctedBearingInRadians) * distanceInMeters;
 };
 
@@ -116,10 +119,7 @@ export const calculatePosition = (r, betaAngle, alphaAngle) => {
     return { x, y, z };
 };
 
-export const castPoint = (
-    { locationX: x, locationY: y },
-    { width, height }
-) => {
+export const castPoint = ({ locationX: x, locationY: y }) => {
     let touch = new THREE.Vector2();
     touch.set(x / width * 2 - 1, -(y / height) * 2 + 1);
     return touch;

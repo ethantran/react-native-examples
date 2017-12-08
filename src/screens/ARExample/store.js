@@ -8,7 +8,7 @@ import reducers from './reducers';
 const config = {
     key: 'root',
     storage,
-    blacklist: ['ar']
+    blacklist: ['ar', 'hudSelection']
 };
 
 const reducer = persistCombineReducers(config, reducers);

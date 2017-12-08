@@ -32,7 +32,7 @@ class PolySearchView extends React.Component {
     };
 
     render() {
-        return this.props.show ? (
+        return this.props.visible ? (
             <View style={[StyleSheet.absoluteFill, { padding: 8 }]}>
                 <View style={{ flexDirection: 'row', marginBottom: 8 }}>
                     <TextInput

@@ -18,6 +18,7 @@ export const SET_REGION = 'ar/SET_REGION';
 export const ADD_OBJECT = 'ar/ADD_OBJECT';
 export const ADD_OBJECTS = 'ar/ADD_OBJECTS';
 export const SELECT_OBJECT = 'ar/SELECT_OBJECT';
+export const SELECT_OBJECT3D = 'ar/SELECT_OBJECT3D';
 
 export const setupARKit = (view, gl) => async dispatch => {
     const width = gl.drawingBufferWidth;
@@ -96,24 +97,23 @@ export const addObjects = objects => ({ type: ADD_OBJECTS, objects });
 // TODO: perhaps finding a geolocation from the initial geolocation and the camera position's distance from origin is better
 export const addObjectAtHeading = object => (dispatch, getState) => {
     const {
-        heading: { initialHeading, currentHeading },
+        heading: { currentHeading },
         location: { currentLocation },
         three: { camera, scene }
     } = getState();
-    if (!object.type || !object.mesh) {
-        console.error('type or mesh missing');
+    if (!object.type || !object.object3D) {
+        console.error('type or object3D missing');
         return;
     }
 
-    placeObjectFromCamera(camera, object.mesh, defaultCreateDistance);
+    placeObjectFromCamera(camera, object.object3D, defaultCreateDistance);
 
     // update scene
-    scene.add(object.mesh);
+    scene.add(object.object3D);
 
     // heading is used like bearing
-    // find difference between current and initial heading because arkit three js space heading does not know where is true north
     const headingInRadians = turf.helpers.degreesToRadians(
-        currentHeading.trueHeading - initialHeading.trueHeading
+        currentHeading.trueHeading
     );
 
     // calculate geolocation by adding distance to current geolocation
@@ -135,3 +135,4 @@ export const addObjectAtHeading = object => (dispatch, getState) => {
     dispatch(addObject(newObject));
 };
 export const selectObject = object => ({ type: SELECT_OBJECT, object });
+export const selectObject3D = object3D => ({ type: SELECT_OBJECT3D, object3D });

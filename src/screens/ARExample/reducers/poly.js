@@ -13,7 +13,7 @@ const initialState = {
     assets: [],
     loading: false,
     loadingMore: false,
-    show: false
+    visible: false
 };
 
 export default function(state = initialState, action) {
@@ -57,12 +57,12 @@ export default function(state = initialState, action) {
         case OPEN:
             return {
                 ...state,
-                show: true
+                visible: true
             };
         case CLOSE:
             return {
                 ...state,
-                show: false
+                visible: false
             };
         default:
             return state;

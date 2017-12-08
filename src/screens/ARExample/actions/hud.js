@@ -85,7 +85,7 @@ export const predictHQEventsSearch = () => async (dispatch, getState) => {
 
         const cameraPos = getCameraPosition(camera);
 
-        // create default mesh for each event
+        // create default object3D for each event
         const newObjects = [];
         events.forEach((event, i) => {
             const newObject = {
@@ -95,15 +95,15 @@ export const predictHQEventsSearch = () => async (dispatch, getState) => {
             };
             const geometry = GEOMETRIES[0];
             const material = MATERIALS[0];
-            const mesh = new THREE.Mesh(geometry, material);
-            newObject.mesh = mesh;
+            const object3D = new THREE.Mesh(geometry, material);
+            newObject.object3D = object3D;
             calibrateObject(
                 newObject,
                 cameraPos,
                 currentLocation,
                 initialHeading
             );
-            scene.add(newObject.mesh);
+            scene.add(newObject.object3D);
             newObjects.push(newObject);
         });
 

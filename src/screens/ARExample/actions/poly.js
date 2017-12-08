@@ -3,7 +3,7 @@ import * as THREE from 'three';
 require('three/examples/js/loaders/OBJLoader');
 require('../../../loaders/MTLLoader');
 
-import { addObject, selectObject } from './ar';
+import { addObjectAtHeading, selectObject } from './ar';
 import { setProgress, closeProgress } from './progress';
 import { POLY_API_KEY } from '../constants';
 import Poly from '../../../Poly';
@@ -93,12 +93,13 @@ export const selectAsset = asset => dispatch => {
                 objloader.setMaterials(mats);
                 objloader.load(
                     urlOBJ,
-                    mesh => {
+                    object3D => {
                         const object = {
                             type: 'poly',
-                            mesh,
+                            object3D,
                             asset
                         };
+                        dispatch(addObjectAtHeading(object));
                         dispatch(selectObject(object));
                         dispatch(closeProgress());
                         dispatch(close());
@@ -142,7 +143,7 @@ export const selectAsset = asset => dispatch => {
     //     rootDownload.uri,
     //     ...resourceDownloads.map(download => download.uri)
     // ]);
-    // const mesh = await ExpoTHREE.loadAsync(
+    // const object3D = await ExpoTHREE.loadAsync(
     //     [
     //         rootDownload.uri,
     //         ...resourceDownloads.map(download => download.uri)
@@ -151,7 +152,7 @@ export const selectAsset = asset => dispatch => {
     // );
     // console.log('local downloading complete');
     // console.log('apply materials');
-    // mesh.traverse(async child => {
+    // object3D.traverse(async child => {
     //     if (child instanceof THREE.Mesh) {
     //         /// Smooth geometry
     //         const tempGeo = new THREE.Geometry().fromBufferGeometry(
@@ -168,22 +169,22 @@ export const selectAsset = asset => dispatch => {
     //         child.material.side = THREE.FrontSide;
     //     }
     // });
-    // this.addCustomDestination({ mesh });
+    // this.addCustomDestination({ object3D });
     // this.setState({
-    //     polySelection: { mesh },
+    //     polySelection: { object3D },
     //     showDownloadProgress: false
     // });
 
-    // const mesh = await ExpoTHREE.loadAsync(
+    // const object3D = await ExpoTHREE.loadAsync(
     //     [
     //         objFormat.root.url,
     //         ...objFormat.resources.map(resource => resource.url)
     //     ],
     //     this.handleLocalDownload
     // );
-    // this.addCustomDestination({ mesh });
+    // this.addCustomDestination({ object3D });
     // this.setState({
-    //     polySelection: { mesh },
+    //     polySelection: { object3D },
     //     showDownloadProgress: false
     // });
 };

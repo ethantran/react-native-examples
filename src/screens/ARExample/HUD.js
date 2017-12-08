@@ -7,6 +7,7 @@ import PolyIcon from '../../assets/icons/poly.png';
 import PredictHQIcon from '../../assets/icons/predicthq.png';
 
 import { open as openPoly } from './actions/poly';
+import { open as openGeometry } from './actions/geometry';
 import {
     toggleMap,
     googlePlacesNearbySearch,
@@ -16,8 +17,18 @@ import {
 
 class HUD extends React.Component {
     render() {
-        return this.props.show ? (
-            <View style={styles.container}>
+        return  (
+            <View style={[styles.container, !this.props.visible && styles.hide]}>
+                <TouchableOpacity
+                    onPress={this.props.onGeometry}
+                    style={styles.button}
+                >
+                    <MaterialCommunityIcons
+                        size={24}
+                        color="#000"
+                        name="shape-plus"
+                    />
+                </TouchableOpacity>
                 <TouchableOpacity
                     onPress={this.props.onPoly}
                     style={styles.button}
@@ -65,7 +76,7 @@ class HUD extends React.Component {
                     />
                 </TouchableOpacity>
             </View>
-        ) : null;
+        );
     }
 }
 
@@ -74,6 +85,10 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 8,
         right: 8
+    },
+    // returning render null makes image icons not show for some reason
+    hide: {
+        right: '-100%'
     },
     button: {
         width: 48,
@@ -90,6 +105,7 @@ const styles = StyleSheet.create({
 const mapStateToProps = state => state.hud;
 
 const mapDispatchToProps = {
+    onGeometry: openGeometry,
     onPoly: openPoly,
     onMap: toggleMap,
     onGooglePlaces: googlePlacesNearbySearch,

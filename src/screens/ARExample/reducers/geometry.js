@@ -1,5 +1,4 @@
-import { HUD_CLOSE } from '../actions/hudSelection';
-import { SELECT_OBJECT, SELECT_OBJECT3D } from '../actions/ar';
+import { OPEN, CLOSE } from '../actions/geometry';
 
 const initialState = {
     visible: false
@@ -7,13 +6,12 @@ const initialState = {
 
 export default function(state = initialState, action) {
     switch (action.type) {
-        case SELECT_OBJECT:
-        case SELECT_OBJECT3D:
+        case OPEN:
             return {
                 ...state,
                 visible: true
             };
-        case HUD_CLOSE:
+        case CLOSE:
             return {
                 ...state,
                 visible: false

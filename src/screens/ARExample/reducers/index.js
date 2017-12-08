@@ -1,3 +1,4 @@
+import geometry from './geometry';
 import heading from './heading';
 import hud from './hud';
 import hudSelection from './hudSelection';
@@ -9,6 +10,7 @@ import region from './region';
 import three from './three';
 
 export default {
+    geometry,
     heading,
     hud,
     hudSelection,

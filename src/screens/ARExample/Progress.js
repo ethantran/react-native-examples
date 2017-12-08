@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { connect } from 'react-redux';
 
-const Progress = ({ show, progress }) =>
-    show ? (
+const Progress = ({ visible, progress }) =>
+    visible ? (
         <View
             style={[
                 StyleSheet.absoluteFill,
