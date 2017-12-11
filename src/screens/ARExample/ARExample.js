@@ -31,14 +31,17 @@ import {
     addObject,
     addObjects,
     addObjectAtHeading,
-    selectObject3D
+    selectObject3D,
+    reset
 } from './actions/ar';
+import LongpressControl from './LongpressControl';
+import TransformControls from './TransformControls';
+import TouchVisualizer from './TouchVisualizer';
 
 const screen = Dimensions.get('window');
 const ASPECT_RATIO = screen.width / screen.height;
 const LATITUDE_DELTA = 0.005;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
-const defaultPlaceDistance = 3;
 
 // temporary save until i setup redux persist
 const savedObjects = [
@@ -98,9 +101,7 @@ class ARExample extends React.Component {
             onPanResponderGrant: this.handlePanResponderGrant,
             onPanResponderMove: this.handlePanResponderMove,
             onPanResponderRelease: this.handlePanResponderRelease,
-            onPanResponderTerminate: () => {
-                clearTimeout(this.longPressTimeoutId);
-            },
+            onPanResponderTerminate: this.handlePanResponderTerminate,
             onShouldBlockNativeResponder: () => false
         });
     }
@@ -117,6 +118,8 @@ class ARExample extends React.Component {
 
         // stop requestAnimationFrame infinite loop
         cancelAnimationFrame(this.requestID);
+
+        this.props.reset();
     }
 
     shouldComponentUpdate(nextProps, nextState) {
@@ -302,68 +305,44 @@ class ARExample extends React.Component {
     // };
 
     handlePanResponderGrant = (event, gestureState) => {
+        this.longpressControl.handlePanResponderGrant(event, gestureState);
+        this.touchVisualizer.handlePanResponderGrant(event, gestureState);
         let touch = castPoint(event.nativeEvent, {
             width: this.props.width,
             height: this.props.height
         });
         this.props.raycaster.setFromCamera(touch, this.props.camera);
-
-        // visualize raycaster
-        if (this.arrow) {
-            this.props.scene.remove(this.arrow);
-        }
-        this.arrow = new THREE.ArrowHelper(
-            this.props.raycaster.ray.direction,
-            this.props.raycaster.ray.origin,
-            100,
-            Math.random() * 0xffffff
-        );
-        this.props.scene.add(this.arrow);
-
-        // Find all intersected object3Ds
         let intersects = this.props.raycaster.intersectObjects(
             this.props.object3Ds
         );
-
         if (intersects.length > 0) {
-            this.handleIntersection(event, gestureState, intersects[0]);
-        }
-    };
-
-    /**
-     * Provide different interactions based on object type
-     */
-    handleIntersection = (event, gestureState, intersection) => {
-        // need to store selection because it can be used for pan responder move, animate, or render
-        this.props.selectObject3D(intersection.object);
-        console.log('handleIntersection');
-        if (event.nativeEvent.touches.length === 2) {
-        } else {
-            this.longPressTimeoutId = setTimeout(() => {
-                console.log('longpress');
-                this.longpress = intersection;
-            }, 1000);
+            const intersection = intersects[0];
+            this.props.selectObject3D(intersection.object);
+            this.transformControl.detach();
+            this.transformControl.attach(intersection.object);
+            this.transformControl.onPointerDown(event, gestureState);
+            this.longpressControl.attach(intersection.object);
         }
     };
 
     handlePanResponderMove = (event, gestureState) => {
-        let touch = castPoint(event.nativeEvent, {
-            width: this.props.width,
-            height: this.props.height
-        });
-        this.props.raycaster.setFromCamera(touch, this.props.camera);
-
-        // if selected an object
-        if (this.props.selection) {
-            // this.props.selection.object3D.position.x += gestureState.dx;
-        }
+        this.transformControl.handlePanResponderMove(event, gestureState);
+        this.longpressControl.handlePanResponderMove(event, gestureState);
     };
 
     handlePanResponderRelease = () => {
         clearTimeout(this.longPressTimeoutId);
-        if (this.longpress) {
-            this.longpress = false;
-        }
+        this.transformControl.handlePanResponderRelease();
+        this.longpressControl.handlePanResponderRelease();
+        this.touchVisualizer.handlePanResponderRelease();
+        // TODO: update latitude longitude and elevation changes from pan responder
+    };
+
+    handlePanResponderTerminate = () => {
+        clearTimeout(this.longPressTimeoutId);
+        this.transformControl.handlePanResponderTerminate();
+        this.longpressControl.handlePanResponderTerminate();
+        this.touchVisualizer.handlePanResponderTerminate();
     };
 
     // adjust object3D positions to new geolocation
@@ -394,19 +373,21 @@ class ARExample extends React.Component {
             gl
         );
 
+        this.transformControl = new TransformControls(this.props.camera);
+        this.longpressControl = new LongpressControl(this.props.camera);
+        this.touchVisualizer = new TouchVisualizer(
+            this.props.scene,
+            this.props.camera
+        );
+
         const animate = () => {
             // recalibrate only if geolocation updates a certain number of times
             if (this.recalibrateCount >= recalibrateThreshold) {
                 this.recalibrate();
             }
 
-            if (this.longpress) {
-                placeObjectFromCamera(
-                    this.props.camera,
-                    this.longpress.object,
-                    defaultPlaceDistance
-                );
-            }
+            this.transformControl.update();
+            this.longpressControl.update();
 
             this.requestID = requestAnimationFrame(animate);
             renderer.render(scene, camera);
@@ -437,7 +418,8 @@ const mapDispatchToProps = {
     addObject,
     addObjects,
     addObjectAtHeading,
-    selectObject3D
+    selectObject3D,
+    reset
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(ARExample);

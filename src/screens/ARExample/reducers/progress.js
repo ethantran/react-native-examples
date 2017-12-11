@@ -1,4 +1,5 @@
 import { SET_PROGRESS, CLOSE_PROGRESS } from '../actions/progress';
+import { RESET } from '../actions/ar';
 
 const initialState = {
     visible: false,
@@ -18,6 +19,8 @@ export default function(state = initialState, action) {
                 ...state,
                 visible: false
             };
+        case RESET:
+            return initialState;
         default:
             return state;
     }

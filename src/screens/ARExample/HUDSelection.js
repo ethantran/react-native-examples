@@ -9,6 +9,8 @@ import {
     translate,
     scaleUp,
     scaleDown,
+    rotateLeft,
+    rotateRight,
     copy,
     remove,
     close
@@ -18,6 +20,8 @@ class HUDSelection extends React.Component {
     handleTranslate = () => this.props.onTranslate(this.props.selection);
     handleScaleUp = () => this.props.onScaleUp(this.props.selection);
     handleScaleDown = () => this.props.onScaleDown(this.props.selection);
+    handleRotateLeft = () => this.props.onRotateLeft(this.props.selection);
+    handleRotateRight = () => this.props.onRotateRight(this.props.selection);
     handleDelete = () => this.props.onDelete(this.props.selection);
     handleCopy = () => this.props.onCopy(this.props.selection);
     handleDone = () => this.props.onDone(this.props.selection);
@@ -47,10 +51,16 @@ class HUDSelection extends React.Component {
                     <MaterialIcons size={24} color="#000" name="remove" />
                 </TouchableOpacity>
                 <TouchableOpacity
-                    onPress={this.handleDelete}
+                    onPress={this.handleRotateLeft}
                     style={styles.button}
                 >
-                    <MaterialIcons size={24} color="#000" name="delete" />
+                    <MaterialIcons size={24} color="#000" name="rotate-left" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={this.handleRotateRight}
+                    style={styles.button}
+                >
+                    <MaterialIcons size={24} color="#000" name="rotate-right" />
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={this.handleCopy}
@@ -59,8 +69,14 @@ class HUDSelection extends React.Component {
                     <MaterialIcons size={24} color="#000" name="content-copy" />
                 </TouchableOpacity>
                 <TouchableOpacity
-                    onPress={this.handleDone}
+                    onPress={this.handleDelete}
                     style={styles.button}
+                >
+                    <MaterialIcons size={24} color="#000" name="delete" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={this.handleDone}
+                    style={[styles.button, { position: 'absolute', bottom: 0 }]}
                 >
                     <MaterialIcons size={24} color="#000" name="done" />
                 </TouchableOpacity>
@@ -73,7 +89,8 @@ const styles = StyleSheet.create({
     container: {
         position: 'absolute',
         top: 8,
-        right: 8
+        right: 8,
+        bottom: 8
     },
     button: {
         width: 48,
@@ -96,6 +113,8 @@ const mapDispatchToProps = {
     onTranslate: translate,
     onScaleUp: scaleUp,
     onScaleDown: scaleDown,
+    onRotateLeft: rotateLeft,
+    onRotateRight: rotateRight,
     onCopy: copy,
     onDelete: remove,
     onDone: close

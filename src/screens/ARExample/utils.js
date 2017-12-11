@@ -105,9 +105,9 @@ export const placeObject = (object, position, rotation, distanceInMeters) => {
         rotation.y,
         rotation.x
     );
-    object.translateX(-1 * z);
-    object.translateY(y);
-    object.translateZ(-1 * x);
+    object.position.x += -1 * z;
+    object.position.y += y;
+    object.position.z += -1 * x;
 };
 
 // position given two angles and a distance

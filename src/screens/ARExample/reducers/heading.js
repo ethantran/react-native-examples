@@ -1,4 +1,4 @@
-import { SET_INITIAL_HEADING, SET_HEADING } from '../actions/ar';
+import { SET_INITIAL_HEADING, SET_HEADING, RESET } from '../actions/ar';
 
 const initialState = {};
 
@@ -15,6 +15,8 @@ export default function(state = initialState, action) {
                 ...state,
                 currentHeading: action.heading
             };
+        case RESET:
+            return initialState;
         default:
             return state;
     }

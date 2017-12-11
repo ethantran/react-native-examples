@@ -3,6 +3,7 @@ import {
     OPEN as OPEN_GEOMETRY,
     CLOSE as CLOSE_GEOMETRY
 } from '../actions/geometry';
+import { RESET } from '../actions/ar';
 
 const initialState = {
     visible: true
@@ -22,6 +23,8 @@ export default function(state = initialState, action) {
                 ...state,
                 visible: true
             };
+        case RESET:
+            return initialState;
         default:
             return state;
     }

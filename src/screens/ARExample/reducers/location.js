@@ -1,4 +1,4 @@
-import { SET_INITIAL_LOCATION, SET_LOCATION } from '../actions/ar';
+import { SET_INITIAL_LOCATION, SET_LOCATION, RESET } from '../actions/ar';
 
 const initialState = {};
 
@@ -15,6 +15,8 @@ export default function(state = initialState, action) {
                 ...state,
                 currentLocation: action.location
             };
+        case RESET:
+            return initialState;
         default:
             return state;
     }

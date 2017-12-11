@@ -1,4 +1,4 @@
-import { SET_REGION } from '../actions/ar';
+import { SET_REGION, RESET } from '../actions/ar';
 
 const initialState = {};
 
@@ -9,6 +9,8 @@ export default function(state = initialState, action) {
                 ...state,
                 ...action.region
             };
+        case RESET:
+            return initialState;
         default:
             return state;
     }

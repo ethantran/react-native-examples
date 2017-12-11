@@ -1,5 +1,5 @@
 import { HUD_CLOSE } from '../actions/hudSelection';
-import { SELECT_OBJECT, SELECT_OBJECT3D } from '../actions/ar';
+import { SELECT_OBJECT, SELECT_OBJECT3D, RESET } from '../actions/ar';
 
 const initialState = {
     visible: false
@@ -18,6 +18,8 @@ export default function(state = initialState, action) {
                 ...state,
                 visible: false
             };
+        case RESET:
+            return initialState;
         default:
             return state;
     }

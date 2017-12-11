@@ -8,6 +8,7 @@ import {
     OPEN,
     CLOSE
 } from '../actions/poly';
+import { RESET } from '../actions/ar';
 
 const initialState = {
     assets: [],
@@ -62,6 +63,13 @@ export default function(state = initialState, action) {
         case CLOSE:
             return {
                 ...state,
+                visible: false
+            };
+        case RESET:
+            return {
+                ...state,
+                loading: false,
+                loadingMore: false,
                 visible: false
             };
         default:

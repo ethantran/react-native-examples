@@ -1,4 +1,5 @@
-import { addObjectAtHeading, removeObject } from './ar';
+import * as THREE from 'three';
+import { addObjectAtHeading, removeObject, deselect } from './ar';
 
 export const HUD_RESIZE = 'hudSelection/RESIZE';
 export const HUD_CLOSE = 'hudSelection/CLOSE';
@@ -19,19 +20,41 @@ export const scaleDown = (object, value = 1) => dispatch => {
         object.object3D.scale.z - object.object3D.scale.z * 0.1
     );
 };
-export const copy = selectedObject => dispatch => {
-    const object = {
-        ...selectedObject,
-        object3D: selectedObject.object3D.clone()
+export const rotateLeft = object => (dispatch, getState) => {
+    const { three: { camera } } = getState();
+    const plane = new THREE.Plane();
+    plane.setFromNormalAndCoplanarPoint(
+        camera.getWorldDirection(plane.normal),
+        object.object3D.position
+    );
+    // const coplanarPoint = plane.coplanarPoint();
+    // const focalPoint = new THREE.Vector3().copy(coplanarPoint).add(plane.normal);
+    object.object3D.rotateOnAxis(plane.normal, -0.1);
+};
+export const rotateRight = object => (dispatch, getState) => {
+    const { three: { camera } } = getState();
+    const plane = new THREE.Plane();
+    plane.setFromNormalAndCoplanarPoint(
+        camera.getWorldDirection(plane.normal),
+        object.object3D.position
+    );
+    object.object3D.rotateOnAxis(plane.normal, 0.1);
+};
+export const copy = object => dispatch => {
+    const newObject = {
+        ...object,
+        object3D: object.object3D.clone()
     };
-    dispatch(addObjectAtHeading(object));
+    dispatch(addObjectAtHeading(newObject));
 };
 /**
  * Remove object3D from scene and object from store
  */
-export const remove = selectedObject => (dispatch, getState) => {
-    const { three: { scene } } = getState();
-    scene.remove(selectedObject.object3D);
-    dispatch(removeObject(selectedObject));
+export const remove = object => (dispatch, getState) => {
+    dispatch(removeObject(object));
+    dispatch(close());
 };
-export const close = () => ({ type: HUD_CLOSE });
+export const close = () => dispatch => {
+    dispatch(deselect());
+    dispatch({ type: HUD_CLOSE });
+};

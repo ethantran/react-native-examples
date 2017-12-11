@@ -4,11 +4,15 @@ import {
     INIT,
     ADD_OBJECT,
     ADD_OBJECTS,
+    REMOVE_OBJECT,
     SELECT_OBJECT,
-    SELECT_OBJECT3D
+    SELECT_OBJECT3D,
+    DESELECT
 } from '../actions/ar';
 
 const initialState = {
+    // used to highlight selected object edges
+    highlights: null,
     // used for touch events to see if we touched an object
     raycaster: new THREE.Raycaster(),
     // need to track objects for raycaster
@@ -36,26 +40,36 @@ export default function(state = initialState, action) {
                     ...action.objects.map(object => object.object3D)
                 ]
             };
+        case REMOVE_OBJECT:
+            return {
+                ...state,
+                objects: state.objects.filter(e => e !== action.object),
+                object3Ds: state.object3Ds.filter(
+                    e => e !== action.object.object3D
+                )
+            };
         case SELECT_OBJECT:
             return {
                 ...state,
+                highlights: action.highlights,
                 selection: action.object,
                 selection3D: action.object.object3D
             };
         case SELECT_OBJECT3D:
-            console.log('action', action.object3D.id);
-            console.log(
-                state.objects.find(object => {
-                    console.log(object.object3D.id);
-                    return object.object3D.id === action.object3D.id;
-                })
-            );
             return {
                 ...state,
+                highlights: action.highlights,
                 selection: state.objects.find(
                     object => object.object3D === action.object3D
                 ),
                 selection3D: action.object3D
+            };
+        case DESELECT:
+            return {
+                ...state,
+                highlights: null,
+                selection: null,
+                selection3D: null
             };
         default:
             return state;

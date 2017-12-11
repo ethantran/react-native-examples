@@ -17,8 +17,13 @@ export const SET_REGION = 'ar/SET_REGION';
 
 export const ADD_OBJECT = 'ar/ADD_OBJECT';
 export const ADD_OBJECTS = 'ar/ADD_OBJECTS';
+export const REMOVE_OBJECT = 'ar/REMOVE_OBJECT';
+
 export const SELECT_OBJECT = 'ar/SELECT_OBJECT';
 export const SELECT_OBJECT3D = 'ar/SELECT_OBJECT3D';
+export const DESELECT = 'ar/DESELECT';
+
+export const RESET = 'ar/RESET';
 
 export const setupARKit = (view, gl) => async dispatch => {
     const width = gl.drawingBufferWidth;
@@ -134,5 +139,36 @@ export const addObjectAtHeading = object => (dispatch, getState) => {
 
     dispatch(addObject(newObject));
 };
-export const selectObject = object => ({ type: SELECT_OBJECT, object });
-export const selectObject3D = object3D => ({ type: SELECT_OBJECT3D, object3D });
+export const removeObject = object => (dispatch, getState) => {
+    const { three: { scene } } = getState();
+    scene.remove(object.object3D);
+    dispatch({ type: REMOVE_OBJECT, object });
+};
+
+// TODO: use EdgesGeometry or WireframeGeometry
+const addHighlights = (scene, object3D) => {
+    let highlights = [];
+    return highlights;
+};
+
+export const selectObject = object => (dispatch, getState) => {
+    const { three: { scene } } = getState();
+    const highlights = addHighlights(scene, object.object3D);
+    dispatch({ type: SELECT_OBJECT, object, highlights });
+};
+export const selectObject3D = object3D => (dispatch, getState) => {
+    const { three: { scene } } = getState();
+    const highlights = addHighlights(scene, object3D);
+    dispatch({ type: SELECT_OBJECT3D, object3D, highlights });
+};
+export const deselect = object3D => (dispatch, getState) => {
+    const { three: { scene, highlights } } = getState();
+    if (highlights) {
+        highlights.forEach(highlight => {
+            scene.remove(highlight);
+        });
+    }
+    dispatch({ type: DESELECT });
+};
+
+export const reset = () => ({ type: RESET });
