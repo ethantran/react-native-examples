@@ -151,7 +151,7 @@ export default function TransformControls(camera) {
         }
     };
 
-    this.onPointerDown = function(event, gestureState) {
+    this.handlePanResponderGrant = function(event, gestureState) {
         if (event.nativeEvent.touches.length === 2) {
             startTouchData = getTouchData(event, gestureState);
             offset.copy(startTouchData.vector);
@@ -474,7 +474,7 @@ export default function TransformControls(camera) {
         };
     }
 
-    this.onPointerMove = function(event, gestureState) {
+    this.handlePanResponderMove = function(event, gestureState) {
         if (event.nativeEvent.touches.length === 2) {
             endTouchData = getTouchData(event, gestureState);
             if (!startTouchData) {
@@ -501,14 +501,16 @@ export default function TransformControls(camera) {
             }
             point.copy(endTouchData.vector);
             // translateOnMove();
-            // scaleOnMove();
+            scaleOnMove();
             rotateOnMove();
 
             scope.triggerUpdate = true;
         }
     };
 
-    this.onPointerUp = function(event) {};
+    this.handlePanResponderRelease = function(event) {};
+
+    this.handlePanResponderTerminate = function(event) {};
 
     function intersectObjects({ locationX, locationY }, objects) {
         const { width, height } = Dimensions.get('window');

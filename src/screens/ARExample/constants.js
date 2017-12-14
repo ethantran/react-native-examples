@@ -4,6 +4,7 @@ export const POLY_API_KEY = 'AIzaSyDVowQMZQfFz7XsURJciLIQXZpgBDLfqIc';
 export const GOOGLE_MAPS_GEOCODING_API_KEY =
     'AIzaSyBzaFQvsdY9Cx5aB6tXMxrYm3jNchcvFhk';
 export const GOOGLE_PLACES_API_KEY = 'AIzaSyBUu7bIlrA-3YvwwLZQpKMKmuMcTZtBByw';
+export const GOOGLE_ELEVATION_API_KEY = 'AIzaSyBla1qvxgQfV4DOK8lllUkFhvsgki1kX-Q';
 export const PREDICTHQ_ACCESS_TOKEN = '2tOvVru3zpLQ5wa5qsuolUDzYqc5gC';
 export const GEOMETRIES = [new THREE.BoxGeometry(1, 2, 1)];
 export const MATERIALS = [

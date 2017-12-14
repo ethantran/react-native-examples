@@ -6,12 +6,14 @@ import {
     LOAD_MORE_SUCCESS,
     LOAD_MORE_ERROR,
     OPEN,
-    CLOSE
+    CLOSE,
+    SELECT_ASSET
 } from '../actions/poly';
 import { RESET } from '../actions/ar';
 
 const initialState = {
     assets: [],
+    loadedAssets: {},
     loading: false,
     loadingMore: false,
     visible: false
@@ -64,6 +66,14 @@ export default function(state = initialState, action) {
             return {
                 ...state,
                 visible: false
+            };
+        case SELECT_ASSET:
+            return {
+                ...state,
+                loadedAssets: {
+                    ...state.loadedAssets,
+                    [action.asset.name]: action.asset
+                }
             };
         case RESET:
             return {

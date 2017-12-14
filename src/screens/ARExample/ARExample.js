@@ -18,7 +18,7 @@ import Progress from './Progress';
 import {
     getCameraPosition,
     calibrateObject,
-    placeObjectFromCamera,
+    placeObject3DFromCamera,
     castPoint
 } from './utils';
 import {
@@ -32,7 +32,8 @@ import {
     addObjects,
     addObjectAtHeading,
     selectObject3D,
-    reset
+    reset,
+    loadFromStorage
 } from './actions/ar';
 import LongpressControl from './LongpressControl';
 import TransformControls from './TransformControls';
@@ -40,7 +41,7 @@ import TouchVisualizer from './TouchVisualizer';
 
 const screen = Dimensions.get('window');
 const ASPECT_RATIO = screen.width / screen.height;
-const LATITUDE_DELTA = 0.005;
+const LATITUDE_DELTA = 0.001;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 // temporary save until i setup redux persist
@@ -123,11 +124,16 @@ class ARExample extends React.Component {
     }
 
     shouldComponentUpdate(nextProps, nextState) {
-        if (this.props.currentLocation !== nextProps.currentLocation) {
+        if (this.props.mapVisible !== nextProps.mapVisible) {
             return true;
         }
-        if (this.props.showMap !== nextProps.showMap) {
-            return true;
+        if (nextProps.mapVisible) {
+            if (this.props.currentLocation !== nextProps.currentLocation) {
+                return true;
+            }
+            if (this.props.objects !== nextProps.objects) {
+                return true;
+            }
         }
         if (this.props.region !== nextProps.region) {
             return true;
@@ -145,7 +151,7 @@ class ARExample extends React.Component {
             this.watchPositionAsync(),
             this.watchHeadingAsync()
         ]);
-        // this.addSavedObjectsToScene();
+        this.props.loadFromStorage();
     };
 
     getCurrentPositionAsync = async () => {
@@ -226,7 +232,7 @@ class ARExample extends React.Component {
     renderObjectMarker = (obj, i) => {
         return (
             <MapView.Marker
-                key={obj.id || `${obj.type}_${i}`}
+                key={obj.id || `${obj.type}_${obj.latitude}_${obj.longitude}`}
                 coordinate={{
                     latitude: obj.latitude,
                     longitude: obj.longitude
@@ -245,7 +251,8 @@ class ARExample extends React.Component {
                     onContextCreate={this._onGLContextCreate}
                 />
                 {this.props.currentLocation &&
-                    this.props.showMap && (
+                    this.props.mapVisible &&
+                    this.props.region && (
                         <MapView
                             ref={c => (this.map = c)}
                             style={{
@@ -258,8 +265,8 @@ class ARExample extends React.Component {
                             initialRegion={this.props.region}
                             region={this.props.region}
                             onRegionChange={this.onRegionChange}
-                            showsUserLocation={false}
-                            followsUserLocation={false}
+                            showsUserLocation={true}
+                            followsUserLocation={true}
                         >
                             <MapView.Marker
                                 coordinate={this.props.currentLocation.coords}
@@ -276,34 +283,6 @@ class ARExample extends React.Component {
         );
     }
 
-    // addSavedObjectsToScene = () => {
-    //     // not sure why i should do this, copied from somewhere
-    //     this.camera.position.setFromMatrixPosition(this.camera.matrixWorld);
-
-    //     // get camera position
-    //     const cameraPos = new THREE.Vector3(0, 0, 0);
-    //     cameraPos.applyMatrix4(this.camera.matrixWorld);
-
-    //     // take the current object state (should be empty anyway) and add saved objects
-    //     const newObjects = [...this.state.objects];
-    //     // TODO: replace savedObjects with real redux persist
-    //     savedObjects.forEach((object, i) => {
-    //         const newObject = { ...object };
-    //         // default object type place handler
-    //         if (object.type === 'place') {
-    //             const geometry = GEOMETRIES[0];
-    //             const material = MATERIALS[i % MATERIALS.length];
-    //             const object3D = new THREE.Mesh(geometry, material);
-    //             newObject.object3D = object3D;
-    //         } else if (object.type === 'poly') {
-    //         }
-    //         this.scene.add(newObject.object3D);
-    //         this.calibrateObject(newObject, cameraPos);
-    //         newObjects.push(newObject);
-    //     });
-    //     this.setState({ objects: newObjects });
-    // };
-
     handlePanResponderGrant = (event, gestureState) => {
         this.longpressControl.handlePanResponderGrant(event, gestureState);
         this.touchVisualizer.handlePanResponderGrant(event, gestureState);
@@ -313,14 +292,20 @@ class ARExample extends React.Component {
         });
         this.props.raycaster.setFromCamera(touch, this.props.camera);
         let intersects = this.props.raycaster.intersectObjects(
-            this.props.object3Ds
+            this.props.object3Ds,
+            true
+        );
+        console.log(
+            'handlePanResponderGrant',
+            this.props.object3Ds.length,
+            intersects.length
         );
         if (intersects.length > 0) {
             const intersection = intersects[0];
             this.props.selectObject3D(intersection.object);
             this.transformControl.detach();
             this.transformControl.attach(intersection.object);
-            this.transformControl.onPointerDown(event, gestureState);
+            this.transformControl.handlePanResponderGrant(event, gestureState);
             this.longpressControl.attach(intersection.object);
         }
     };
@@ -331,7 +316,6 @@ class ARExample extends React.Component {
     };
 
     handlePanResponderRelease = () => {
-        clearTimeout(this.longPressTimeoutId);
         this.transformControl.handlePanResponderRelease();
         this.longpressControl.handlePanResponderRelease();
         this.touchVisualizer.handlePanResponderRelease();
@@ -339,7 +323,6 @@ class ARExample extends React.Component {
     };
 
     handlePanResponderTerminate = () => {
-        clearTimeout(this.longPressTimeoutId);
         this.transformControl.handlePanResponderTerminate();
         this.longpressControl.handlePanResponderTerminate();
         this.touchVisualizer.handlePanResponderTerminate();
@@ -357,7 +340,7 @@ class ARExample extends React.Component {
             calibrateObject(
                 object,
                 cameraPos,
-                this.props.currentLocation,
+                this.props.currentLocation.coords,
                 this.props.initialHeading
             )
         );
@@ -382,9 +365,9 @@ class ARExample extends React.Component {
 
         const animate = () => {
             // recalibrate only if geolocation updates a certain number of times
-            if (this.recalibrateCount >= recalibrateThreshold) {
-                this.recalibrate();
-            }
+            // if (this.recalibrateCount >= recalibrateThreshold) {
+            //     this.recalibrate();
+            // }
 
             this.transformControl.update();
             this.longpressControl.update();
@@ -405,7 +388,10 @@ const mapStateToProps = state => ({
     initialHeading: state.heading.initialHeading,
     currentHeading: state.heading.currentHeading,
     currentLocation: state.location.currentLocation,
-    ...state.three
+    mapVisible: state.map.visible,
+    region: state.region,
+    ...state.three,
+    objects: state.objects
 });
 
 const mapDispatchToProps = {
@@ -419,7 +405,8 @@ const mapDispatchToProps = {
     addObjects,
     addObjectAtHeading,
     selectObject3D,
-    reset
+    reset,
+    loadFromStorage
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(ARExample);

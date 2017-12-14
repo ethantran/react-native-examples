@@ -5,6 +5,7 @@ import {
     ADD_OBJECT,
     ADD_OBJECTS,
     REMOVE_OBJECT,
+    RESTORE_OBJECTS,
     SELECT_OBJECT,
     SELECT_OBJECT3D,
     DESELECT
@@ -45,8 +46,14 @@ export default function(state = initialState, action) {
                 ...state,
                 objects: state.objects.filter(e => e !== action.object),
                 object3Ds: state.object3Ds.filter(
-                    e => e !== action.object.object3D
+                    e => e !== action.object.object3D.userData.root
                 )
+            };
+        case RESTORE_OBJECTS:
+            return {
+                ...state,
+                objects: action.objects,
+                object3Ds: action.objects.map(object => object.object3D)
             };
         case SELECT_OBJECT:
             return {
@@ -60,9 +67,9 @@ export default function(state = initialState, action) {
                 ...state,
                 highlights: action.highlights,
                 selection: state.objects.find(
-                    object => object.object3D === action.object3D
+                    object => object.object3D === action.object3D.userData.root
                 ),
-                selection3D: action.object3D
+                selection3D: action.object3D.userData.root
             };
         case DESELECT:
             return {

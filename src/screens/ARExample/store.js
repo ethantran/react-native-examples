@@ -8,7 +8,7 @@ import reducers from './reducers';
 const config = {
     key: 'root',
     storage,
-    blacklist: ['ar', 'hudSelection']
+    blacklist: ['ar', 'hudSelection', 'polyObject3Ds']
 };
 
 const reducer = persistCombineReducers(config, reducers);

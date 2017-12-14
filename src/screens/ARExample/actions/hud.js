@@ -25,24 +25,88 @@ export const googlePlacesNearbySearch = () => async (dispatch, getState) => {
         dispatch({
             type: GOOGLE_MAPS_NEARBY_SEARCH
         });
-        const { location: { currentLocation } } = getState();
-        const results = await GoogleMaps.place.nearbysearch({
+        const {
+            heading: { initialHeading },
+            location: { currentLocation },
+            three: { camera, scene }
+        } = getState();
+        const res1 = await GoogleMaps.place.nearbysearch({
             key: GOOGLE_PLACES_API_KEY,
             location: `${currentLocation.coords.latitude},${
                 currentLocation.coords.longitude
             }`,
-            radius: 10
+            radius: 50
         });
-        console.log(results);
+        const locations = [];
+        res1.results.forEach(result => {
+            locations.push(
+                `${result.geometry.location.lat},${
+                    result.geometry.location.lng
+                }`
+            );
+        });
+        const res2 = await GoogleMaps.place.elevation({
+            key: GOOGLE_PLACES_API_KEY,
+            locations: locations.join('|')
+        });
+        const cameraPos = getCameraPosition(camera);
+        const newObjects = res1.results.map((result, i) => {
+            const newObject = {
+                ...result,
+                latitude: result.geometry.location.lat,
+                longitude: result.geometry.location.lng,
+                elevation: res2.results[i].elevation
+            };
+            const geometry = GEOMETRIES[0];
+            const material = MATERIALS[0];
+            const object3D = new THREE.Mesh(geometry, material);
+            newObject.object3D = object3D;
+            calibrateObject(
+                newObject,
+                cameraPos,
+                currentLocation.coords,
+                initialHeading
+            );
+            scene.add(newObject.object3D);
+            return newObject;
+        })
+        dispatch(addObjects(newObjects));
     } catch (error) {
         console.error(error);
         dispatch({ type: HUD_ERROR, error });
         throw error;
     }
 };
-export const instagramLocationMediaSearch = () => ({
-    type: INSTAGRAM_LOCATION_MEDIA_SEARCH
-});
+export const instagramLocationMediaSearch = () => async (
+    dispatch,
+    getState
+) => {
+    // try {
+    //     dispatch({ type: INSTAGRAM_LOCATION_MEDIA_SEARCH });
+    //     const {
+    //         heading: { initialHeading },
+    //         location: { currentLocation },
+    //         three: { camera, scene }
+    //     } = getState();
+    //     const results = await Instagram.location.search(
+    //         {
+    //             lat: currentLocation.coords.latitude,
+    //             lng: currentLocation.coords.longitude,
+    //             access_token: INSTAGRAM_ACCESS_TOKEN
+    //         },
+    //         {
+    //             headers: {
+    //                 Accept: 'application/json',
+    //                 Authorization: `Bearer ${PREDICTHQ_ACCESS_TOKEN}`
+    //             }
+    //         }
+    //     );
+    // } catch (error) {
+    //     console.error(error);
+    //     dispatch({ type: HUD_ERROR, error });
+    //     throw error;
+    // }
+};
 export const predictHQEventsSearch = () => async (dispatch, getState) => {
     try {
         dispatch({ type: PREDICTHQ_EVENTS_SEARCH });
@@ -100,7 +164,7 @@ export const predictHQEventsSearch = () => async (dispatch, getState) => {
             calibrateObject(
                 newObject,
                 cameraPos,
-                currentLocation,
+                currentLocation.coords,
                 initialHeading
             );
             scene.add(newObject.object3D);

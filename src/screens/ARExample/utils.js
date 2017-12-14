@@ -53,23 +53,24 @@ export const getCameraPosition = camera => {
     return cameraPos;
 };
 
+// take the current camera pos and add the distance from current geolocation to object geolocation
+// camera position is the best guess of where we are, current geolocation to three.js position
+// camera position can be not in synce with current geolocation if geo is not updating when we move
+// TODO: perhaps finding a geolocation from the initial geolocation and the camera position's distance from origin is better
 export const calibrateObject = (
     object,
     cameraPos,
-    currentLocation,
+    currentLocationCoords,
     initialHeading
 ) => {
     // get distance from current geolocation to the object geolocation
-    const { distanceInKilometers } = getDistance(
-        currentLocation.coords,
-        object
-    );
+    const { distanceInKilometers } = getDistance(currentLocationCoords, object);
 
     // convert into meters since arkit is in meters i think
     const distanceInMeters = distanceInKilometers * 1000;
 
     // bearing is used to find a new point at a distance and an angle from starting coordinates
-    const { bearingInDegrees } = getBearing(currentLocation.coords, object);
+    const { bearingInDegrees } = getBearing(currentLocationCoords, object);
 
     // adjust bearing based on the heading that arkit three.js space likely initialized at
     const correctedBearingInDegrees =
@@ -80,34 +81,37 @@ export const calibrateObject = (
         correctedBearingInDegrees
     );
 
-    // take the current camera pos and add the distance from current geolocation to object geolocation
-    // camera position is the best guess of where we are, current geolocation to three.js position
-    // camera position can be not in synce with current geolocation if geo is not updating when we move
-    // TODO: perhaps finding a geolocation from the initial geolocation and the camera position's distance from origin is better
-    object.object3D.position.z =
-        cameraPos.z +
-        -1 * Math.cos(correctedBearingInRadians) * distanceInMeters;
-    object.object3D.position.x =
-        cameraPos.x + Math.sin(correctedBearingInRadians) * distanceInMeters;
+    const bearingVector = new THREE.Vector3(0, 0, -1);
+    const axis = new THREE.Vector3(0, 1, 0);
+    bearingVector.applyAxisAngle(axis, correctedBearingInRadians);
+    object.object3D.position.addVectors(
+        cameraPos,
+        bearingVector.multiplyScalar(distanceInMeters)
+    );
 };
 
-export const placeObjectFromCamera = (camera, object, distanceInMeters) => {
+export const placeObject3DFromCamera = (camera, object3D, distanceInMeters) => {
     const position = getCameraPosition(camera);
     const rotation = camera.getWorldRotation();
-    placeObject(object, position, rotation, distanceInMeters);
+    placeObject3D(object3D, position, rotation, distanceInMeters);
 };
 
 // push object from position at angle
-export const placeObject = (object, position, rotation, distanceInMeters) => {
-    object.position.copy(position);
+export const placeObject3D = (
+    object3D,
+    fromPosition,
+    rotation,
+    distanceInMeters
+) => {
+    object3D.position.copy(fromPosition);
     const { x, y, z } = calculatePosition(
         distanceInMeters,
         rotation.y,
         rotation.x
     );
-    object.position.x += -1 * z;
-    object.position.y += y;
-    object.position.z += -1 * x;
+    object3D.position.x += -1 * z;
+    object3D.position.y += y;
+    object3D.position.z += -1 * x;
 };
 
 // position given two angles and a distance
@@ -123,4 +127,35 @@ export const castPoint = ({ locationX: x, locationY: y }) => {
     let touch = new THREE.Vector2();
     touch.set(x / width * 2 - 1, -(y / height) * 2 + 1);
     return touch;
+};
+
+export const loadOBJMTL = (urlOBJ, urlMTL, onProgress) =>
+    new Promise((resolve, reject) => {
+        const mtlloader = new THREE.MTLLoader();
+        mtlloader.load(
+            urlMTL,
+            mats => {
+                const objloader = new THREE.OBJLoader();
+                objloader.setMaterials(mats);
+                objloader.load(
+                    urlOBJ,
+                    object3D => {
+                        resolve(object3D);
+                    },
+                    onProgress,
+                    reject
+                );
+            },
+            onProgress,
+            reject
+        );
+    });
+
+// used for raycaster intersection
+// get root object3d from child intersection by making every child know the root
+export const mapRootToChildren = (object3D, root) => {
+    object3D.userData.root = root ? root : object3D;
+    object3D.children.forEach(child => {
+        mapRootToChildren(child, object3D);
+    });
 };

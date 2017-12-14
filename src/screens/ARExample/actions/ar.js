@@ -3,7 +3,14 @@ import * as THREE from 'three';
 import ExpoTHREE from 'expo-three';
 import { PixelRatio } from 'react-native';
 
-import { placeObjectFromCamera } from '../utils';
+import {
+    placeObject3DFromCamera,
+    getCameraPosition,
+    calibrateObject,
+    mapRootToChildren
+} from '../utils';
+import { creators as geometryCreators } from './geometry';
+import { loadAssets as loadPolyAssets } from './poly';
 
 export const INIT = 'ar/init';
 
@@ -24,6 +31,8 @@ export const SELECT_OBJECT3D = 'ar/SELECT_OBJECT3D';
 export const DESELECT = 'ar/DESELECT';
 
 export const RESET = 'ar/RESET';
+
+export const RESTORE_OBJECTS = 'ar/RESTORE_OBJECTS';
 
 export const setupARKit = (view, gl) => async dispatch => {
     const width = gl.drawingBufferWidth;
@@ -94,7 +103,10 @@ export const setRegion = region => ({ type: SET_REGION, region });
 
 export const defaultCreateDistance = 3;
 
-export const addObject = object => ({ type: ADD_OBJECT, object });
+export const addObject = object => dispatch => {
+    mapRootToChildren(object.object3D);
+    dispatch({ type: ADD_OBJECT, object });
+};
 export const addObjects = objects => ({ type: ADD_OBJECTS, objects });
 // take the current camera pos and add the distance from current geolocation to object geolocation
 // camera position is the best guess of where we are, current geolocation to three.js position
@@ -111,7 +123,7 @@ export const addObjectAtHeading = object => (dispatch, getState) => {
         return;
     }
 
-    placeObjectFromCamera(camera, object.object3D, defaultCreateDistance);
+    placeObject3DFromCamera(camera, object.object3D, defaultCreateDistance);
 
     // update scene
     scene.add(object.object3D);
@@ -124,18 +136,26 @@ export const addObjectAtHeading = object => (dispatch, getState) => {
     // calculate geolocation by adding distance to current geolocation
     // need this to save and load the custom poly object in the same spot in the future
     //TODO: correct this with new formula
-    const longitude =
-        currentLocation.coords.longitude +
-        -1 *
-            Math.cos(headingInRadians) *
-            turf.helpers.lengthToDegrees(defaultCreateDistance, 'meters');
-    const latitude =
-        currentLocation.coords.latitude +
-        Math.sin(headingInRadians) *
-            turf.helpers.lengthToDegrees(defaultCreateDistance, 'meters');
+    const distanceInMeters = turf.helpers.lengthToDegrees(
+        camera.position.distanceTo(object.object3D.position),
+        'meters'
+    );
+    const direction = new THREE.Vector2(0, 1);
+    const center = new THREE.Vector2(0, 0);
+    direction.rotateAround(center, -1 * headingInRadians);
+    direction.multiplyScalar(distanceInMeters);
+    const latlngVector = new THREE.Vector2(
+        currentLocation.coords.longitude,
+        currentLocation.coords.latitude
+    );
+    latlngVector.add(direction);
 
     // update object with geolocation and update state
-    const newObject = { ...object, longitude, latitude };
+    const newObject = {
+        ...object,
+        longitude: latlngVector.x,
+        latitude: latlngVector.y
+    };
 
     dispatch(addObject(newObject));
 };
@@ -172,3 +192,39 @@ export const deselect = object3D => (dispatch, getState) => {
 };
 
 export const reset = () => ({ type: RESET });
+
+export const loadFromStorage = () => async dispatch => {
+    // await dispatch(loadPolyAssets());
+    await dispatch(createFromStorage());
+};
+
+// TODO: scale
+// TODO: rotation
+// TODO: elevation
+export const createFromStorage = () => (dispatch, getState) => {
+    const {
+        heading: { initialHeading },
+        location: { currentLocation },
+        objects,
+        three: { scene, camera }
+    } = getState();
+    const cameraPos = getCameraPosition(camera);
+    const restoredObjects = objects.map((object, i) => {
+        let restoredObject = {
+            ...object
+        };
+        if (restoredObject.type === 'geometry') {
+            restoredObject.object3D = geometryCreators[object.geometryName]();
+        }
+        mapRootToChildren(restoredObject.object3D);
+        calibrateObject(
+            restoredObject,
+            cameraPos,
+            currentLocation.coords,
+            initialHeading
+        );
+        scene.add(restoredObject.object3D);
+        return restoredObject;
+    });
+    dispatch({ type: RESTORE_OBJECTS, objects: restoredObjects });
+};

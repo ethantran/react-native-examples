@@ -6,6 +6,7 @@ require('../../../loaders/MTLLoader');
 import { addObjectAtHeading, selectObject } from './ar';
 import { setProgress, closeProgress } from './progress';
 import { POLY_API_KEY } from '../constants';
+import { loadOBJMTL } from '../utils';
 import Poly from '../../../Poly';
 
 export const LIST_ASSETS = 'poly/LIST_ASSETS';
@@ -20,6 +21,9 @@ export const OPEN = 'poly/OPEN';
 export const CLOSE = 'poly/CLOSE';
 
 export const SELECT_ASSET = 'poly/SELECT_ASSET';
+
+export const LOAD_ASSET = 'poly/LOAD_ASSET';
+export const LOAD_ASSETS = 'poly/LOAD_ASSETS';
 
 export const listAssets = keywords => async dispatch => {
     try {
@@ -72,45 +76,51 @@ export const loadMore = params => async (dispatch, getState) => {
     }
 };
 
-export const selectAsset = asset => dispatch => {
+export const selectAsset = asset => async (dispatch, getState) => {
+    const { polyObject3Ds } = getState();
+    const polyObject3D = polyObject3Ds[asset.name];
+    if (polyObject3D) {
+        const clone = polyObject3D.clone();
+        const object = {
+            type: 'poly',
+            object3D: clone,
+            asset
+        };
+        dispatch({ type: SELECT_ASSET, asset });
+        dispatch(addObjectAtHeading(object));
+        dispatch(selectObject(object));
+        dispatch(closeProgress());
+        dispatch(close());
+        return;
+    }
     const handleLoaderProgress = xhr => {
         dispatch(setProgress(xhr.loaded / xhr.total * 100));
-    };
-
-    const handleLoaderError = error => {
-        console.error(error);
-        dispatch(closeProgress());
     };
     const objFormat = asset.formats.find(format => format.formatType === 'OBJ');
     if (objFormat) {
         const urlOBJ = objFormat.root.url;
         const urlMTL = objFormat.resources[0].url;
-        const mtlloader = new THREE.MTLLoader();
-        mtlloader.load(
-            urlMTL,
-            mats => {
-                const objloader = new THREE.OBJLoader();
-                objloader.setMaterials(mats);
-                objloader.load(
-                    urlOBJ,
-                    object3D => {
-                        const object = {
-                            type: 'poly',
-                            object3D,
-                            asset
-                        };
-                        dispatch(addObjectAtHeading(object));
-                        dispatch(selectObject(object));
-                        dispatch(closeProgress());
-                        dispatch(close());
-                    },
-                    handleLoaderProgress,
-                    handleLoaderError
-                );
-            },
-            handleLoaderProgress,
-            handleLoaderError
-        );
+        try {
+            const object3D = await loadOBJMTL(
+                urlOBJ,
+                urlMTL,
+                handleLoaderProgress
+            );
+            const object = {
+                type: 'poly',
+                object3D: object3D.clone(),
+                asset
+            };
+            dispatch({ type: SELECT_ASSET, asset, object3D });
+            dispatch(addObjectAtHeading(object));
+            dispatch(selectObject(object));
+            dispatch(closeProgress());
+            dispatch(close());
+        } catch (error) {
+            console.error(error);
+            dispatch(closeProgress());
+            throw error;
+        }
     } else {
         console.error('Asset must have an obj format');
         return;
@@ -191,3 +201,38 @@ export const selectAsset = asset => dispatch => {
 
 export const open = () => ({ type: OPEN });
 export const close = () => ({ type: CLOSE });
+
+export const loadAssets = () => async (dispatch, getState) => {
+    const { poly: { loadedAssets } } = getState();
+    let object3Ds = {};
+    try {
+        for (let assetName in loadedAssets) {
+            const asset = loadedAssets[assetName];
+            const objFormat = asset.formats.find(
+                format => format.formatType === 'OBJ'
+            );
+            const urlOBJ = objFormat.root.url;
+            const urlMTL = objFormat.resources[0].url;
+            const object3D = await loadOBJMTL(urlOBJ, urlMTL);
+            object3Ds[assetName] = object3D;
+        }
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+    dispatch({ type: LOAD_ASSETS, object3Ds });
+};
+export const loadAsset = assetName => async (dispatch, getState) => {
+    const { poly: { loadedAssets } } = getState();
+    const asset = loadedAssets[assetName];
+    const objFormat = asset.formats.find(format => format.formatType === 'OBJ');
+    const urlOBJ = objFormat.root.url;
+    const urlMTL = objFormat.resources[0].url;
+    try {
+        const object3D = await loadOBJMTL(urlOBJ, urlMTL);
+        dispatch({ type: LOAD_ASSET, object3D, assetName });
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+};

@@ -112,6 +112,7 @@ export const creators = {
 export const select = geometry => dispatch => {
     const object = {
         type: 'geometry',
+        geometryName: geometry.name,
         object3D: creators[geometry.name]()
     };
     dispatch(addObjectAtHeading(object));

@@ -1,4 +1,4 @@
-import { placeObjectFromCamera } from './utils';
+import { placeObject3DFromCamera } from './utils';
 
 export default class LongpressControl {
     constructor(camera, distance = 3, duration = 1000) {
@@ -43,7 +43,7 @@ export default class LongpressControl {
 
     update() {
         if (this.triggerUpdate && this.object) {
-            placeObjectFromCamera(this.camera, this.object, this.distance);
+            placeObject3DFromCamera(this.camera, this.object, this.distance);
         }
     }
 }
