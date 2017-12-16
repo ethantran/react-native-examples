@@ -56,16 +56,6 @@ class HUD extends React.Component {
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
-                    onPress={this.props.onInstagram}
-                    style={styles.button}
-                >
-                    <MaterialCommunityIcons
-                        size={24}
-                        color="#000"
-                        name="instagram"
-                    />
-                </TouchableOpacity>
-                <TouchableOpacity
                     onPress={this.props.onPredictHQ}
                     style={styles.button}
                 >

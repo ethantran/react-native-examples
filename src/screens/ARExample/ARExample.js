@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, PanResponder, Dimensions } from 'react-native';
-import { GLView, Location, Permissions, MapView, FileSystem } from 'expo';
+import { View, PanResponder, Dimensions, PixelRatio } from 'react-native';
+import { Location, Permissions, MapView, FileSystem } from 'expo';
+import ExpoGraphics from 'expo-graphics';
 import debounce from 'lodash/debounce';
 import { connect } from 'react-redux';
-import * as THREE from 'three';
+import ExpoTHREE, { THREE } from 'expo-three';
 import * as turf from '@turf/turf';
 
 require('three/examples/js/loaders/OBJLoader');
@@ -22,7 +23,7 @@ import {
     castPoint
 } from './utils';
 import {
-    setupARKit,
+    init,
     setInitialLocation,
     setLocation,
     setInitialHeading,
@@ -108,11 +109,13 @@ class ARExample extends React.Component {
     }
 
     componentDidMount() {
-        console.disableYellowBox = true;
+        // console.disableYellowBox = true;
+        THREE.suppressExpoWarnings(true);
     }
 
     componentWillUnmount() {
-        console.disableYellowBox = false;
+        // console.disableYellowBox = false;
+        THREE.suppressExpoWarnings(false);
 
         // stop listening for location and heading
         this.subs.forEach(sub => sub.remove());
@@ -244,12 +247,16 @@ class ARExample extends React.Component {
     render() {
         return (
             <View style={{ flex: 1 }}>
-                <GLView
-                    {...this.panResponder.panHandlers}
-                    ref={ref => (this._glView = ref)}
-                    style={{ flex: 1 }}
-                    onContextCreate={this._onGLContextCreate}
-                />
+                <View {...this.panResponder.panHandlers} style={{ flex: 1 }}>
+                    <ExpoGraphics.View
+                        pointerEvents="none"
+                        style={{ flex: 1 }}
+                        onContextCreate={this._onGLContextCreate}
+                        onRender={this.handleRender}
+                        onResize={this.handleResize}
+                        arEnabled
+                    />
+                </View>
                 {this.props.currentLocation &&
                     this.props.mapVisible &&
                     this.props.region && (
@@ -284,6 +291,10 @@ class ARExample extends React.Component {
     }
 
     handlePanResponderGrant = (event, gestureState) => {
+        const { featurePoints } = ExpoTHREE.getRawFeaturePoints(this.arSession);
+        if (featurePoints.length > 0) {
+        }
+
         this.longpressControl.handlePanResponderGrant(event, gestureState);
         this.touchVisualizer.handlePanResponderGrant(event, gestureState);
         let touch = castPoint(event.nativeEvent, {
@@ -304,9 +315,9 @@ class ARExample extends React.Component {
             const intersection = intersects[0];
             this.props.selectObject3D(intersection.object);
             this.transformControl.detach();
-            this.transformControl.attach(intersection.object);
+            this.transformControl.attach(intersection.object.userData.root);
             this.transformControl.handlePanResponderGrant(event, gestureState);
-            this.longpressControl.attach(intersection.object);
+            this.longpressControl.attach(intersection.object.userData.root);
         }
     };
 
@@ -349,38 +360,105 @@ class ARExample extends React.Component {
         this.recalibrateCount = 0;
     };
 
-    _onGLContextCreate = async gl => {
-        // boilerplace arkit setup
-        const { scene, camera, renderer } = await this.props.setupARKit(
-            this._glView,
-            gl
+    _onGLContextCreate = async (gl, arSession) => {
+        const { drawingBufferWidth, drawingBufferHeight } = gl;
+        const scale = PixelRatio.get();
+        const width = drawingBufferWidth / scale;
+        const height = drawingBufferHeight / scale;
+
+        const renderer = ExpoTHREE.createRenderer({ gl });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(scale);
+
+        const scene = new THREE.Scene();
+        const camera = ExpoTHREE.createARCamera(
+            arSession,
+            width,
+            height,
+            0.01,
+            1000
         );
+        // need to add camera to scene to make attached objects visible
+        scene.add(camera);
 
-        this.transformControl = new TransformControls(this.props.camera);
-        this.longpressControl = new LongpressControl(this.props.camera);
-        this.touchVisualizer = new TouchVisualizer(
-            this.props.scene,
-            this.props.camera
+        scene.background = ExpoTHREE.createARBackgroundTexture(
+            arSession,
+            renderer
         );
+        ExpoTHREE.setIsLightEstimationEnabled(arSession, true);
+        ExpoTHREE.setIsPlaneDetectionEnabled(arSession, true);
 
-        const animate = () => {
-            // recalibrate only if geolocation updates a certain number of times
-            // if (this.recalibrateCount >= recalibrateThreshold) {
-            //     this.recalibrate();
-            // }
+        // add lights so models are not black
+        const ambient = new THREE.HemisphereLight(0x66aaff, 0x886666, 0.5);
+        ambient.position.set(-0.5, 0.75, -1);
+        scene.add(ambient);
+        const light = new THREE.DirectionalLight(0xffffff);
+        light.position.set(1, 0.75, 0.5);
+        scene.add(light);
 
-            this.transformControl.update();
-            this.longpressControl.update();
+        // good for debugging and seeing the three js space
+        scene.add(new THREE.GridHelper(10, 10));
+        scene.add(new THREE.CameraHelper(camera));
+        scene.add(new THREE.AxesHelper(5));
+        scene.add(new THREE.DirectionalLightHelper(light, 5));
 
-            this.requestID = requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-            gl.endFrameEXP();
-        };
-        animate();
+        this.transformControl = new TransformControls(camera);
+        this.longpressControl = new LongpressControl(camera);
+        this.touchVisualizer = new TouchVisualizer(scene, camera);
 
         // start geolocation and heading tracking here so the initial location and
         // initial heading is as accurate as possible
         this.init();
+
+        // store these in redux so other components and actions can use them without having to pass them as props
+        this.props.init({
+            width,
+            height,
+            arSession,
+            scene,
+            camera,
+            renderer,
+            ambient,
+            light
+        });
+
+        this.width = width;
+        this.height = height;
+        this.arSession = arSession;
+        this.scene = scene;
+        this.camera = camera;
+        this.renderer = renderer;
+        this.ambient = ambient;
+        this.light = light;
+    };
+
+    handleResize = ({ width, height }) => {
+        const scale = PixelRatio.get();
+
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setPixelRatio(scale);
+        this.renderer.setSize(width, height);
+    };
+
+    handleRender = () => {
+        // recalibrate only if geolocation updates a certain number of times
+        // if (this.recalibrateCount >= recalibrateThreshold) {
+        //     this.recalibrate();
+        // }
+
+        this.transformControl.update();
+        this.longpressControl.update();
+
+        const lightEstimation = ExpoTHREE.getARLightEstimation(
+            this.props.arSession
+        );
+        if (lightEstimation) {
+            this.light.intensity = 1 / 2000 * lightEstimation.ambientIntensity;
+            // this.props.light.ambientIntensity = lightEstimation.ambientColorTemperature;
+        }
+
+        this.renderer.render(this.scene, this.camera);
     };
 }
 
@@ -395,7 +473,7 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = {
-    setupARKit,
+    init,
     setInitialLocation,
     setLocation,
     setInitialHeading,

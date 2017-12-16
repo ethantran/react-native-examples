@@ -1,7 +1,5 @@
 import * as turf from '@turf/turf';
 import * as THREE from 'three';
-import ExpoTHREE from 'expo-three';
-import { PixelRatio } from 'react-native';
 
 import {
     placeObject3DFromCamera,
@@ -34,57 +32,10 @@ export const RESET = 'ar/RESET';
 
 export const RESTORE_OBJECTS = 'ar/RESTORE_OBJECTS';
 
-export const setupARKit = (view, gl) => async dispatch => {
-    const width = gl.drawingBufferWidth;
-    const height = gl.drawingBufferHeight;
-    const arSession = await view.startARSessionAsync();
-    const scene = new THREE.Scene();
-    const camera = ExpoTHREE.createARCamera(
-        arSession,
-        width,
-        height,
-        0.01,
-        1000
-    );
-    // need to add camera to scene to make attached objects visible
-    scene.add(camera);
-    const renderer = ExpoTHREE.createRenderer({ gl });
-    renderer.setSize(width, height);
-    // renderer.setPixelRatio(PixelRatio.get());
-    scene.background = ExpoTHREE.createARBackgroundTexture(arSession, renderer);
-
-    // add lights so models are not black
-    const ambient = new THREE.HemisphereLight(0x66aaff, 0x886666, 0.5);
-    ambient.position.set(-0.5, 0.75, -1);
-    scene.add(ambient);
-    const light = new THREE.DirectionalLight(0xffffff);
-    light.position.set(1, 0.75, 0.5);
-    scene.add(light);
-
-    // good for debugging and seeing the three js space
-    scene.add(new THREE.GridHelper(10, 10));
-    scene.add(new THREE.CameraHelper(camera));
-    scene.add(new THREE.AxesHelper(5));
-    scene.add(new THREE.DirectionalLightHelper(light, 5));
-
-    const state = {
-        width,
-        height,
-        arSession,
-        scene,
-        camera,
-        renderer,
-        ambient,
-        light
-    };
-
-    dispatch({
-        type: INIT,
-        state
-    });
-
-    return state;
-};
+export const init = state => ({
+    type: INIT,
+    state
+});
 
 export const setInitialLocation = location => ({
     type: SET_INITIAL_LOCATION,
