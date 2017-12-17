@@ -1,5 +1,6 @@
 import AnchorWalkthrough from './screens/AnchorWalkthrough';
 import ARExample from './screens/ARExample/App';
+import ChatAnimation from './screens/ChatAnimation';
 import FlipboardCover from './screens/FlipboardCover';
 import LolaTravelChat from './screens/LolaTravelChat';
 import OperatorChat from './screens/OperatorChat';
@@ -48,6 +49,7 @@ export default {
     Main: { screen: Main },
     AnchorWalkthrough: { screen: AnchorWalkthrough },
     ARExample: { screen: ARExample },
+    ChatAnimation: { screen: ChatAnimation },
     FlipboardCover: { screen: FlipboardCover },
     LolaTravelChat: { screen: LolaTravelChat },
     OperatorChat: { screen: OperatorChat },
