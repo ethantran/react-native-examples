@@ -11,6 +11,8 @@ SVG Metaball Animation from [Varun](http://varun.ca/metaballs/)
 
 ARKit with [Poly](https://developers.google.com/poly/) and geolocation
 
+[Quartz](https://itunes.apple.com/us/app/quartz/id1076683233?mt=8)-like chat animations
+
 ## Screenshots
 
 <img src="https://user-images.githubusercontent.com/3276358/27260564-16fb9d14-53f5-11e7-9743-23e857faa1a3.jpg" width="200px"><img src="https://user-images.githubusercontent.com/3276358/27260565-170b399a-53f5-11e7-9e10-cf777869ffbb.jpg" width="200px"><img src="https://user-images.githubusercontent.com/3276358/27514756-7cea7852-5959-11e7-9ae5-3fdd871a9c95.jpg" width="200px">

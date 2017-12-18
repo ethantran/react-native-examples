@@ -1,6 +1,4 @@
-// TODO: Scroll animation
-// TODO: Reply option animation
-// TODO: left message animation
+// Reference: https://itunes.apple.com/us/app/quartz/id1076683233?mt=8
 import React, { Component } from 'react';
 import {
     StyleSheet,
@@ -23,6 +21,8 @@ import randomNumber from '../randomNumber';
 
 import { createStore, combineReducers } from 'redux';
 
+const { height: WINDOW_HEIGHT } = Dimensions.get('window');
+
 const updateAction = (x, y, animationId, animationType) => ({
     type: 'updateAction',
     x,
@@ -34,10 +34,13 @@ const animateAction = animationId => ({
     type: 'animateAction',
     animationId
 });
-const animationReducer = (state = {}, action) => {
+const updateScrollAction = height => ({
+    type: 'updateScrollAction',
+    height
+});
+const animationReducer = (state = { diff: 0, height: 0 }, action) => {
     switch (action.type) {
         case 'updateAction':
-            console.log(action);
             const stateForAnimationId = state[action.animationId] || {};
             const stateForAnimationType =
                 stateForAnimationId[action.animationType] || {};
@@ -58,6 +61,12 @@ const animationReducer = (state = {}, action) => {
                 [action.animationId]: {
                     animate: true
                 }
+            };
+        case 'updateScrollAction':
+            return {
+                ...state,
+                diff: action.height - state.height,
+                height: action.height
             };
         default:
             return state;
@@ -104,11 +113,11 @@ const createAnimationHOC = Comp => {
                     Animated.parallel([
                         Animated.timing(this.style.top, {
                             toValue: this.props.end.y,
-                            duration: 1000
+                            duration: 500
                         }),
                         Animated.timing(this.style.left, {
                             toValue: this.props.end.x,
-                            duration: 1000
+                            duration: 500
                         })
                     ]),
                     Animated.timing(this.style.opacity, {
@@ -119,7 +128,7 @@ const createAnimationHOC = Comp => {
                 this.animation.start();
             } else if (this.props.animationType === 'end') {
                 this.animation = Animated.sequence([
-                    Animated.delay(1000),
+                    Animated.delay(500),
                     Animated.timing(this.style.opacity, {
                         toValue: 1,
                         duration: 0
@@ -131,10 +140,15 @@ const createAnimationHOC = Comp => {
         handleLayout = event => {
             const handle = findNodeHandle(this.component.component);
             UIManager.measure(handle, (x, y, width, height, pageX, pageY) => {
-                console.log(x, y, width, height, pageX, pageY);
                 this.props.updateAnimationData(
                     pageX,
-                    pageY - HEADER_OFFSET,
+                    pageY -
+                        HEADER_OFFSET -
+                        (this.props.animationType === 'end' &&
+                        this.props.scrollViewHeight > WINDOW_HEIGHT &&
+                        this.props.scrollDiff > 0
+                            ? this.props.scrollDiff
+                            : 0),
                     this.props.animationId,
                     this.props.animationType
                 );
@@ -156,8 +170,11 @@ const createAnimationHOC = Comp => {
             );
         }
     }
-    const mapStateToProps = (state, props) =>
-        state.animation[props.animationId] || {};
+    const mapStateToProps = (state, props) => ({
+        ...(state.animation[props.animationId] || {}),
+        scrollViewHeight: state.animation.height,
+        scrollDiff: state.animation.diff
+    });
     const mapDispatchToProps = {
         updateAnimationData: updateAction
     };
@@ -165,18 +182,35 @@ const createAnimationHOC = Comp => {
 };
 
 class MessageLeft extends Component {
+    constructor(props) {
+        super(props);
+        this.translateX = new Animated.Value(-1);
+        this.style = {
+            left: this.translateX.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0%', '100%']
+            })
+        };
+    }
+
+    componentDidMount() {
+        Animated.spring(this.translateX, {
+            toValue: 0
+        }).start(this.props.onAnimationEnd);
+    }
+
     render() {
         const props = this.props;
         return (
-            <View
+            <Animated.View
                 ref={c => (this.component = c)}
                 {...props}
-                style={styles.messageLeftContainer}
+                style={[styles.messageLeftContainer, this.style]}
             >
                 <View style={styles.messageLeft}>
                     <Text style={styles.messageLeftText}>{props.text}</Text>
                 </View>
-            </View>
+            </Animated.View>
         );
     }
 }
@@ -222,6 +256,19 @@ class ChatAnimation extends Component {
         messages: [],
         replyOptions: []
     };
+
+    constructor(props) {
+        super(props);
+        this.replyOptionStyle = [
+            {
+                bottom: new Animated.Value(-100)
+            },
+            {
+                bottom: new Animated.Value(-100)
+            }
+        ];
+        this.scrollY = new Animated.Value(0);
+    }
 
     componentDidMount() {
         this.addLeftMessage();
@@ -272,28 +319,62 @@ class ChatAnimation extends Component {
                     }
                 ]
             });
-        }, 2000);
+            this.scrollView.scrollToEnd();
+        }, 1000);
     }
 
     selectReplyOption = replyOption => {
         this.setState({ selectedReply: replyOption });
+        this.hideReplyOptions();
+    };
+
+    showReplyOptions = () => {
+        Animated.stagger(
+            100,
+            this.state.replyOptions.map((replyOption, i) =>
+                Animated.spring(this.replyOptionStyle[i].bottom, {
+                    toValue: 0
+                })
+            )
+        ).start();
+    };
+
+    hideReplyOptions = () => {
+        Animated.stagger(
+            100,
+            this.state.replyOptions.map((replyOption, i) =>
+                Animated.spring(this.replyOptionStyle[i].bottom, {
+                    toValue: -100
+                })
+            )
+        ).start();
     };
 
     renderMessage = message => {
         if (message.user === 'left') {
-            return <MessageLeft key={message.id} text={message.text} />;
+            return (
+                <MessageLeft
+                    key={message.id}
+                    text={message.text}
+                    onAnimationEnd={this.handleMessageLeftAnimationEnd}
+                />
+            );
         }
         return <MessageRight key={message.id} text={message.text} />;
     };
 
-    renderReplyOption = replyOption => {
+    handleMessageLeftAnimationEnd = () => {
+        this.showReplyOptions();
+    };
+
+    renderReplyOption = (replyOption, i) => {
         return (
             <AnimatedButton
                 key={replyOption.id}
                 animationId={replyOption.id}
                 animationType="start"
                 onPress={() => this.selectReplyOption(replyOption)}
-                style={{ marginRight: 10 }}
+                style={[{ marginRight: 10 }, this.replyOptionStyle[i]]}
                 text={replyOption.text}
             />
         );
@@ -319,13 +400,22 @@ class ChatAnimation extends Component {
     render() {
         return (
             <View style={styles.container}>
-                <ScrollView style={styles.messages}>
+                <ScrollView
+                    ref={c => (this.scrollView = c)}
+                    style={styles.messages}
+                    contentContainerStyle={styles.messagesContentContainer}
+                    onContentSizeChange={(contentWidth, contentHeight) => {
+                        this.props.updateScrollData(contentHeight);
+                        this.scrollView.scrollToEnd({ animated: true });
+                    }}
+                >
                     {this.state.messages.map(this.renderMessage)}
-                    <View>
+                    <View style={{ height: 40 }}>
                         {this.state.replyOptions.map(
                             this.renderReplyOptionAsRightMessage
                         )}
                     </View>
+                    <View style={{ height: 100 }} />
                 </ScrollView>
                 <View style={styles.buttons}>
                     {this.state.replyOptions.map(this.renderReplyOption)}
@@ -345,7 +435,8 @@ class ChatAnimation extends Component {
 const mapStateToProps = (state, props) =>
     state.animation[props.animationId] || {};
 const mapDispatchToProps = {
-    animate: animateAction
+    animate: animateAction,
+    updateScrollData: updateScrollAction
 };
 ChatAnimation = connect(mapStateToProps, mapDispatchToProps)(ChatAnimation);
 
@@ -367,7 +458,9 @@ const styles = StyleSheet.create({
         flex: 1
     },
     messages: {
-        flex: 1,
+        flex: 1
+    },
+    messagesContentContainer: {
         padding: 10
     },
     messageLeftContainer: {
@@ -399,6 +492,10 @@ const styles = StyleSheet.create({
         textAlign: 'right'
     },
     buttons: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
         flexDirection: 'row',
         padding: 10
     },
