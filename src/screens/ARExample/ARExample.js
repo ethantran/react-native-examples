@@ -120,9 +120,6 @@ class ARExample extends React.Component {
         // stop listening for location and heading
         this.subs.forEach(sub => sub.remove());
 
-        // stop requestAnimationFrame infinite loop
-        cancelAnimationFrame(this.requestID);
-
         this.props.reset();
     }
 
