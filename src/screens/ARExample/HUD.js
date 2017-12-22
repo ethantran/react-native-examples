@@ -5,9 +5,11 @@ import { connect } from 'react-redux';
 
 import PolyIcon from '../../assets/icons/poly.png';
 import PredictHQIcon from '../../assets/icons/predicthq.png';
+import ArchilogicIcon from '../../assets/icons/archilogic.png';
 
 import { open as openPoly } from './actions/poly';
 import { open as openGeometry } from './actions/geometry';
+import { open as openIO3D } from './actions/io3d';
 import {
     toggleMap,
     googlePlacesNearbySearch,
@@ -17,8 +19,10 @@ import {
 
 class HUD extends React.Component {
     render() {
-        return  (
-            <View style={[styles.container, !this.props.visible && styles.hide]}>
+        return (
+            <View
+                style={[styles.container, !this.props.visible && styles.hide]}
+            >
                 <TouchableOpacity
                     onPress={this.props.onGeometry}
                     style={styles.button}
@@ -35,6 +39,16 @@ class HUD extends React.Component {
                 >
                     <Image
                         source={PolyIcon}
+                        style={styles.image}
+                        resizeMode="contain"
+                    />
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={this.props.onIO3D}
+                    style={styles.button}
+                >
+                    <Image
+                        source={ArchilogicIcon}
                         style={styles.image}
                         resizeMode="contain"
                     />
@@ -97,6 +111,7 @@ const mapStateToProps = state => state.hud;
 const mapDispatchToProps = {
     onGeometry: openGeometry,
     onPoly: openPoly,
+    onIO3D: openIO3D,
     onMap: toggleMap,
     onGooglePlaces: googlePlacesNearbySearch,
     onInstagram: instagramLocationMediaSearch,

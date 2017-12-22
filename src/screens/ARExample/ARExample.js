@@ -13,6 +13,7 @@ require('../../loaders/MTLLoader');
 import { GEOMETRIES, MATERIALS } from './constants';
 import HUD from './HUD';
 import HUDSelection from './HUDSelection';
+import IO3DSearchView from './IO3DSearchView';
 import GeometryListView from './GeometryListView';
 import PolySearchView from './PolySearchView';
 import Progress from './Progress';
@@ -282,6 +283,7 @@ class ARExample extends React.Component {
                 <HUDSelection />
                 <GeometryListView />
                 <PolySearchView />
+                <IO3DSearchView />
                 <Progress />
             </View>
         );
