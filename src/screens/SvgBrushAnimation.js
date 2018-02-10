@@ -5,6 +5,7 @@ import { Svg } from 'expo';
 import randomNumber from '../randomNumber';
 import randomColor from '../randomColor';
 import Rect from '../components/AnimatedSvgRect';
+import Circle from '../components/AnimatedSvgCircle';
 
 const widthMin = 1;
 const widthMax = 10;
@@ -90,6 +91,20 @@ export default class SvgBrushAnimation extends Component {
                     <Rect
                         width={width / 2}
                         height={width / 2}
+                        translateX={width / 4}
+                        translateY={width / 4}
+                        fill={this.fill}
+                        fillOpacity={this.fillOpacity}
+                        stroke={this.stroke}
+                        strokeOpacity={this.strokeOpacity}
+                        strokeWidth={this.strokeWidth}
+                        strokeDashoffset={this.strokeDashoffset}
+                        strokeDasharray={strokeDasharray}
+                    />
+                    <Circle
+                        r={width / 4}
+                        cx={width / 4}
+                        cy={width}
                         translateX={width / 4}
                         translateY={width / 4}
                         fill={this.fill}

@@ -5,14 +5,12 @@ import React, { Component } from 'react';
  * Solution: Use a higher order component to do that for you
  */
 
-const KEYS = [
-    'strokeWidth', 'strokeOpacity', 'fillOpacity'
-];
+const KEYS = ['strokeWidth', 'strokeOpacity', 'fillOpacity'];
 
 export default function SvgPropStringFix(WrappedComponent, propKeys = []) {
     propKeys = [...KEYS, ...propKeys];
     return class extends Component {
-        setNativeProps = (props) => {
+        setNativeProps = props => {
             propKeys.reduce((acc, key) => {
                 const val = props[key];
                 if (val != null) {
@@ -21,7 +19,7 @@ export default function SvgPropStringFix(WrappedComponent, propKeys = []) {
                 return acc;
             }, props);
             this._component && this._component.setNativeProps(props);
-        }
+        };
         render() {
             return (
                 <WrappedComponent
