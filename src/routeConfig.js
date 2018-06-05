@@ -4,6 +4,7 @@ import ChatAnimation from './screens/ChatAnimation';
 import FlipboardCover from './screens/FlipboardCover';
 import LolaTravelChat from './screens/LolaTravelChat';
 import OperatorChat from './screens/OperatorChat';
+import RealTimeChartExample from './screens/RealTimeChartExample';
 import SnapchatSearch from './screens/SnapchatSearch';
 import StaggeredLineAnimation from './screens/StaggeredLineAnimation';
 import StaggeredMapAnimation from './screens/StaggeredMapAnimation';
@@ -53,6 +54,7 @@ export default {
     FlipboardCover: { screen: FlipboardCover },
     LolaTravelChat: { screen: LolaTravelChat },
     OperatorChat: { screen: OperatorChat },
+    RealTimeChartExample: { screen: RealTimeChartExample },
     SnapchatSearch: { screen: SnapchatSearch },
     StaggeredLineAnimation: { screen: StaggeredLineAnimation },
     StaggeredMapAnimation: { screen: StaggeredMapAnimation },
