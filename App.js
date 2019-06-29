@@ -1,5 +1,5 @@
-import { StackNavigator } from 'react-navigation';
+import { createAppContainer, createStackNavigator } from "react-navigation";
 // import Reactotron from './ReactotronConfig';
-import routeConfig from './src/routeConfig';
+import routeConfig from "./src/routeConfig";
 
-export default StackNavigator(routeConfig);
+export default createAppContainer(createStackNavigator(routeConfig));
