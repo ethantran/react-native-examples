@@ -65,7 +65,7 @@
         "redux-persist": "^5.4.0",
         "redux-thunk": "^2.2.0",
         "svg-path-properties": "^0.4.1",
-        "three": "^0.106.2",
+        "three": "^0.137.0",
         "topojson": "^3.0.2"
     }
 }
